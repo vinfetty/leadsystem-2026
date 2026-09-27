@@ -61,4 +61,14 @@ class LeadFactory extends Factory
     {
         return $this->state(['status' => $status]);
     }
+
+    /**
+     * Received at a random moment in the last few days, so a list has an order to show.
+     */
+    public function receivedWithinDays(int $days): static
+    {
+        return $this->state(fn (): array => [
+            'created_at' => now()->subMinutes(fake()->numberBetween(5, $days * 24 * 60)),
+        ]);
+    }
 }

@@ -16,7 +16,7 @@ class LeadSeeder extends Seeder
 {
     public function run(): void
     {
-        $brokers = User::factory()->count(3)->create();
+        $brokers = User::query()->brokers()->get();
 
         $sources = collect([
             ['name' => 'Home Loan Finder', 'code' => 'S101', 'website' => 'homeloanfinder.example'],
@@ -25,7 +25,11 @@ class LeadSeeder extends Seeder
         ])->map(fn (array $source): LeadSource => LeadSource::factory()->create($source));
 
         foreach ($sources as $source) {
-            Lead::factory()->count(12)->recycle($source)->create();
+            Lead::factory()
+                ->count(12)
+                ->recycle($source)
+                ->receivedWithinDays(4)
+                ->create();
 
             foreach ($brokers as $broker) {
                 Lead::factory()
@@ -33,6 +37,7 @@ class LeadSeeder extends Seeder
                     ->recycle($source)
                     ->assignedTo($broker)
                     ->has(LeadAction::factory()->count(2)->state(['user_id' => $broker->id]), 'actions')
+                    ->receivedWithinDays(4)
                     ->create();
 
                 Lead::factory()
@@ -41,6 +46,7 @@ class LeadSeeder extends Seeder
                     ->assignedTo($broker)
                     ->withStatus(LeadStatus::Scheduled)
                     ->state(fn (): array => ['follow_up_at' => now()->addDays(fake()->numberBetween(1, 7))])
+                    ->receivedWithinDays(4)
                     ->create();
             }
         }

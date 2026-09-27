@@ -1,9 +1,35 @@
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/livewire/livewire/src/Features/SupportPagination/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-brand-50: oklch(0.97 0.02 165);
+    --color-brand-100: oklch(0.93 0.04 165);
+    --color-brand-600: oklch(0.5 0.1 165);
+    --color-brand-700: oklch(0.42 0.09 165);
+    --color-brand-800: oklch(0.35 0.07 165);
+}
+
+@layer components {
+    .field {
+        @apply block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-xs
+            placeholder:text-stone-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 focus:outline-none;
+    }
+
+    .button {
+        @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-brand-700 px-3.5 py-2 text-sm font-medium
+            text-white shadow-xs hover:bg-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2
+            focus-visible:outline-brand-700 disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .button-quiet {
+        @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-stone-300 bg-white px-3 py-1.5
+            text-sm font-medium text-stone-700 shadow-xs hover:bg-stone-50 focus-visible:outline-2
+            focus-visible:outline-offset-2 focus-visible:outline-brand-700;
+    }
 }

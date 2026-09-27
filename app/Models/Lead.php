@@ -73,9 +73,55 @@ class Lead extends Model
         $query->whereIn('status', LeadStatus::open());
     }
 
+    /**
+     * Leads this user may see: every lead for an admin, and for a broker
+     * their own leads plus the unassigned pool.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeVisibleTo(Builder $query, User $user): void
+    {
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        $query->where(function (Builder $query) use ($user): void {
+            $query->where('assigned_to', $user->id)->orWhereNull('assigned_to');
+        });
+    }
+
+    /**
+     * Match every word of the term against the name, email or phone number.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeSearch(Builder $query, string $term): void
+    {
+        foreach (preg_split('/\s+/', trim($term), flags: PREG_SPLIT_NO_EMPTY) as $word) {
+            $digits = preg_replace('/\D/', '', $word);
+
+            $query->where(function (Builder $query) use ($word, $digits): void {
+                $query->whereLike('first_name', "%{$word}%")
+                    ->orWhereLike('last_name', "%{$word}%")
+                    ->orWhereLike('email', "%{$word}%")
+                    ->when(strlen($digits) >= 3, fn (Builder $query) => $query->orWhereLike('phone', "%{$digits}%"));
+            });
+        }
+    }
+
     public function fullName(): string
     {
         return trim($this->first_name.' '.$this->last_name);
+    }
+
+    public function formattedPhone(): string
+    {
+        return preg_replace('/^(\d{3})(\d{3})(\d{4})$/', '($1) $2-$3', $this->phone);
+    }
+
+    public function isAssigned(): bool
+    {
+        return $this->assigned_to !== null;
     }
 
     public function loanToValue(): ?float
