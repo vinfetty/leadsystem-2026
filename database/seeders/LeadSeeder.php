@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Enums\LeadStatus;
 use App\Models\Lead;
 use App\Models\LeadAction;
 use App\Models\LeadSource;
@@ -36,7 +35,7 @@ class LeadSeeder extends Seeder
                     ->count(4)
                     ->recycle($source)
                     ->assignedTo($broker)
-                    ->has(LeadAction::factory()->count(2)->state(['user_id' => $broker->id]), 'actions')
+                    ->has(LeadAction::factory()->count(2)->state(['user_id' => $broker->id, 'created_at' => now()]), 'actions')
                     ->receivedWithinDays(4)
                     ->create();
 
@@ -44,11 +43,18 @@ class LeadSeeder extends Seeder
                     ->count(2)
                     ->recycle($source)
                     ->assignedTo($broker)
-                    ->withStatus(LeadStatus::Scheduled)
-                    ->state(fn (): array => ['follow_up_at' => now()->addDays(fake()->numberBetween(1, 7))])
+                    ->callbackWithinDays(-1, 5)
                     ->receivedWithinDays(4)
                     ->create();
             }
         }
+
+        Lead::query()->with('source')->each(function (Lead $lead): void {
+            LeadAction::factory()->received($lead)->create();
+
+            if ($lead->follow_up_at !== null) {
+                LeadAction::factory()->scheduled($lead)->create();
+            }
+        });
     }
 }

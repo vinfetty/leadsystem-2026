@@ -32,6 +32,23 @@ class LeadPolicyTest extends TestCase
         $this->assertTrue((new LeadPolicy)->view($this->admin(), $lead));
     }
 
+    #[TestWith([self::BROKER, true])]
+    #[TestWith([null, false])]
+    #[TestWith([self::COLLEAGUE, false])]
+    public function test_broker_may_work_only_a_lead_assigned_to_them(?int $assignedTo, bool $allowed): void
+    {
+        $lead = $this->lead($assignedTo);
+
+        $this->assertSame($allowed, (new LeadPolicy)->update($this->broker(), $lead));
+    }
+
+    public function test_admin_may_work_any_lead(): void
+    {
+        $lead = $this->lead(self::COLLEAGUE);
+
+        $this->assertTrue((new LeadPolicy)->update($this->admin(), $lead));
+    }
+
     public function test_only_an_admin_may_assign_a_lead_to_someone(): void
     {
         $lead = $this->lead(null);

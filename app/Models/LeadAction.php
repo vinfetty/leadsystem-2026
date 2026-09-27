@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\LeadActionType;
 use Database\Factories\LeadActionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,7 +21,13 @@ class LeadAction extends Model
     /** @use HasFactory<LeadActionFactory> */
     use HasFactory;
 
-    public const TYPES = ['received', 'assigned', 'called', 'left_message', 'scheduled', 'note', 'closed', 'dead'];
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return ['type' => LeadActionType::class];
+    }
 
     /**
      * @return BelongsTo<Lead, $this>

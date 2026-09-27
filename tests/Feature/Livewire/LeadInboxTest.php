@@ -7,6 +7,7 @@ use App\Livewire\LeadInbox;
 use App\Models\Lead;
 use App\Models\LeadSource;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Database\Factories\LeadFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -177,7 +178,56 @@ class LeadInboxTest extends TestCase
 
         $inbox = Livewire::actingAs($broker)->test(LeadInbox::class);
 
-        $this->assertSame(['unassigned' => 3, 'mine' => 2, 'open' => 5], $inbox->instance()->summary);
+        $this->assertSame(['unassigned' => 3, 'mine' => 2, 'due' => 0, 'open' => 5], $inbox->instance()->summary);
+    }
+
+    public function test_call_backs_due_view_lists_only_leads_whose_time_has_arrived_soonest_first(): void
+    {
+        $this->travelTo('2026-03-10 15:00:00');
+        $broker = User::factory()->create();
+        $this->leadNamed('Duetoday')->assignedTo($broker)->callbackAt(CarbonImmutable::parse('2026-03-10 14:00'))->create();
+        $this->leadNamed('Dueyesterday')->assignedTo($broker)->callbackAt(CarbonImmutable::parse('2026-03-09 14:00'))->create();
+        $this->leadNamed('Duetomorrow')->assignedTo($broker)->callbackAt(CarbonImmutable::parse('2026-03-11 14:00'))->create();
+        $this->leadNamed('Nocallback')->assignedTo($broker)->create();
+
+        $inbox = Livewire::actingAs($broker)->test(LeadInbox::class)->call('show', 'due');
+
+        $inbox->assertSet('due', true)
+            ->assertSeeInOrder(['Dueyesterday', 'Duetoday'])
+            ->assertDontSee(['Duetomorrow', 'Nocallback']);
+        $this->assertSame(2, $inbox->instance()->summary['due']);
+    }
+
+    public function test_a_closed_lead_is_never_due(): void
+    {
+        $this->travelTo('2026-03-10 15:00:00');
+        $broker = User::factory()->create();
+        $this->leadNamed('Closedlead')->assignedTo($broker)
+            ->callbackAt(CarbonImmutable::parse('2026-03-10 14:00'))
+            ->withStatus(LeadStatus::Closed)
+            ->create();
+
+        $inbox = Livewire::actingAs($broker)->test(LeadInbox::class)->set('status', 'all')->set('due', true);
+
+        $inbox->assertDontSee('Closedlead');
+    }
+
+    public function test_links_each_lead_to_its_own_page(): void
+    {
+        $lead = Lead::factory()->create();
+
+        $inbox = Livewire::actingAs(User::factory()->create())->test(LeadInbox::class);
+
+        $inbox->assertSee(route('leads.show', $lead));
+    }
+
+    public function test_shows_a_notice_carried_over_from_the_lead_page(): void
+    {
+        session()->flash('notice', 'That lead is no longer available to you.');
+
+        $inbox = Livewire::actingAs(User::factory()->create())->test(LeadInbox::class);
+
+        $inbox->assertSee('That lead is no longer available to you.');
     }
 
     public function test_changing_a_filter_clears_the_selection(): void

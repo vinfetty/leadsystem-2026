@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\LeadActionType;
 use App\Enums\LeadStatus;
 use App\Models\Lead;
 use App\Models\User;
@@ -26,7 +27,7 @@ class AssignLead
 
             $lead->actions()->create([
                 'user_id' => $assignedBy->id,
-                'type' => 'assigned',
+                'type' => LeadActionType::Assigned,
                 'note' => 'Assigned to '.$broker->name,
             ]);
         });

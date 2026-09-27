@@ -37,7 +37,7 @@ class LeadInbox extends Component
 
     public const PER_PAGE = 25;
 
-    private const FILTERS = ['search', 'status', 'source', 'state', 'owner'];
+    private const FILTERS = ['search', 'status', 'source', 'state', 'owner', 'due'];
 
     #[Url(except: '')]
     public string $search = '';
@@ -56,6 +56,10 @@ class LeadInbox extends Component
     #[Url(except: 'all')]
     public string $owner = 'all';
 
+    /** Only leads whose call-back time has arrived. */
+    #[Url(except: false)]
+    public bool $due = false;
+
     /** @var array<int, int|string> */
     public array $selected = [];
 
@@ -66,6 +70,8 @@ class LeadInbox extends Component
     public function mount(): void
     {
         $this->authorize('viewAny', Lead::class);
+
+        $this->notice = session('notice');
     }
 
     public function updated(string $property): void
@@ -82,10 +88,18 @@ class LeadInbox extends Component
         $this->resetPage();
     }
 
-    public function show(string $owner): void
+    /**
+     * Jump to one of the quick views: "unassigned", "mine", "due" or "all".
+     */
+    public function show(string $view): void
     {
         $this->clearFilters();
-        $this->owner = $owner;
+
+        match ($view) {
+            'unassigned', 'mine' => $this->owner = $view,
+            'due' => $this->due = true,
+            default => null,
+        };
     }
 
     public function togglePage(): void
@@ -142,13 +156,14 @@ class LeadInbox extends Component
     {
         return $this->filteredLeads()
             ->with(['source', 'broker'])
+            ->when($this->due, fn (Builder $query) => $query->oldest('follow_up_at'))
             ->latest()
             ->latest('id')
             ->paginate(self::PER_PAGE);
     }
 
     /**
-     * @return array{unassigned: int, mine: int, open: int}
+     * @return array{unassigned: int, mine: int, due: int, open: int}
      */
     #[Computed]
     public function summary(): array
@@ -158,6 +173,7 @@ class LeadInbox extends Component
         return [
             'unassigned' => $open()->whereNull('assigned_to')->count(),
             'mine' => $open()->where('assigned_to', Auth::id())->count(),
+            'due' => $open()->due()->count(),
             'open' => $open()->count(),
         ];
     }
@@ -183,7 +199,7 @@ class LeadInbox extends Component
     public function hasFilters(): bool
     {
         return $this->search !== '' || $this->status !== 'open' || $this->source !== ''
-            || $this->state !== '' || $this->owner !== 'all';
+            || $this->state !== '' || $this->owner !== 'all' || $this->due;
     }
 
     public function render(): View
@@ -212,6 +228,7 @@ class LeadInbox extends Component
             ->when(ctype_digit($this->source), fn (Builder $query) => $query->where('lead_source_id', (int) $this->source))
             ->when(in_array($this->state, StateTimeZone::states(), true), fn (Builder $query) => $query->where('state', $this->state))
             ->when($this->owner === 'mine', fn (Builder $query) => $query->where('assigned_to', $user->id))
-            ->when($this->owner === 'unassigned', fn (Builder $query) => $query->whereNull('assigned_to'));
+            ->when($this->owner === 'unassigned', fn (Builder $query) => $query->whereNull('assigned_to'))
+            ->when($this->due, fn (Builder $query) => $query->due());
     }
 }

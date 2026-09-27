@@ -17,8 +17,11 @@
         </div>
 
         <div class="flex flex-wrap gap-2" role="group" aria-label="Quick views">
-            @foreach (['unassigned' => 'Unassigned', 'mine' => 'Mine', 'all' => 'All open'] as $view => $label)
-                @php $current = $owner === $view && $status === 'open' && $search === '' && $source === '' && $state === ''; @endphp
+            @foreach (['unassigned' => 'Unassigned', 'mine' => 'Mine', 'due' => 'Call-backs due', 'all' => 'All open'] as $view => $label)
+                @php
+                    $current = $status === 'open' && $search === '' && $source === '' && $state === ''
+                        && ($view === 'due' ? $due && $owner === 'all' : ! $due && $owner === $view);
+                @endphp
                 <button type="button" wire:click="show('{{ $view }}')" wire:key="view-{{ $view }}"
                     @class([
                         'rounded-lg border px-3.5 py-2 text-left text-sm shadow-xs',
@@ -33,12 +36,7 @@
         </div>
     </div>
 
-    @if ($notice)
-        <div class="mt-5 flex items-center justify-between gap-4 rounded-lg border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-800" role="status">
-            <span>{{ $notice }}</span>
-            <button type="button" wire:click="$set('notice', null)" class="font-medium underline-offset-2 hover:underline">Dismiss</button>
-        </div>
-    @endif
+    <x-notice :message="$notice" class="mt-5" />
 
     <div class="mt-5 grid gap-3 rounded-xl border border-stone-200 bg-white p-3 shadow-xs sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto]">
         <div>
@@ -147,7 +145,9 @@
                             @endif
 
                             <td class="px-3 py-3">
-                                <p class="max-w-36 truncate font-medium text-stone-900 sm:max-w-52 lg:max-w-none">{{ $lead->fullName() }}</p>
+                                <p class="max-w-36 truncate font-medium sm:max-w-52 lg:max-w-none">
+                                    <a href="{{ route('leads.show', $lead) }}" class="text-stone-900 underline-offset-2 hover:text-brand-700 hover:underline">{{ $lead->fullName() }}</a>
+                                </p>
                                 <p class="max-w-36 truncate text-stone-500 sm:max-w-52 lg:max-w-none" title="{{ $lead->email }}">{{ $lead->email }}</p>
                                 <p class="text-stone-500 tabular-nums">{{ $lead->formattedPhone() }}</p>
                                 <x-status-badge :status="$lead->status" class="mt-1.5 sm:hidden" />
@@ -172,7 +172,15 @@
 
                             <td class="hidden truncate px-3 py-3 text-stone-700 xl:table-cell" title="{{ $lead->source->name }}">{{ $lead->source->name }}</td>
 
-                            <td class="hidden px-3 py-3 sm:table-cell"><x-status-badge :status="$lead->status" /></td>
+                            <td class="hidden px-3 py-3 sm:table-cell">
+                                <x-status-badge :status="$lead->status" />
+                                @if ($lead->isOpen() && $lead->follow_up_at)
+                                    <p @class(['mt-1 truncate text-xs tabular-nums', 'font-medium text-red-700' => $lead->isOverdue(), 'text-stone-500' => ! $lead->isOverdue()])
+                                        title="Call back {{ $lead->follow_up_at->setTimezone($lead->timezone)->format('D j M Y, g:i a T') }}">
+                                        {{ $lead->follow_up_at->setTimezone($lead->timezone)->format('j M, g:i a') }}
+                                    </p>
+                                @endif
+                            </td>
 
                             <td class="px-3 py-3">
                                 @if ($lead->broker)

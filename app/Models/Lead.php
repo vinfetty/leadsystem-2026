@@ -28,6 +28,13 @@ class Lead extends Model
     use HasFactory;
 
     /**
+     * The lead may be phoned from 8:00 am up to, but not at, 9:00 pm in their own time zone.
+     */
+    public const CALLING_HOURS_START = 8;
+
+    public const CALLING_HOURS_END = 21;
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -62,7 +69,7 @@ class Lead extends Model
      */
     public function actions(): HasMany
     {
-        return $this->hasMany(LeadAction::class)->latest();
+        return $this->hasMany(LeadAction::class)->latest()->latest('id');
     }
 
     /**
@@ -109,6 +116,16 @@ class Lead extends Model
         }
     }
 
+    /**
+     * Open leads whose call-back time has arrived.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeDue(Builder $query): void
+    {
+        $query->open()->whereNotNull('follow_up_at')->where('follow_up_at', '<=', CarbonImmutable::now());
+    }
+
     public function fullName(): string
     {
         return trim($this->first_name.' '.$this->last_name);
@@ -141,13 +158,25 @@ class Lead extends Model
         return ($now ?? CarbonImmutable::now())->setTimezone($this->timezone);
     }
 
-    /**
-     * Whether it is a reasonable hour to phone the lead (8am to 9pm their time).
-     */
     public function isCallableNow(?CarbonImmutable $now = null): bool
     {
-        $hour = $this->localTime($now)->hour;
+        return $this->isWithinCallingHours($now ?? CarbonImmutable::now());
+    }
 
-        return $hour >= 8 && $hour < 21;
+    public function isWithinCallingHours(CarbonImmutable $at): bool
+    {
+        $hour = $at->setTimezone($this->timezone)->hour;
+
+        return $hour >= self::CALLING_HOURS_START && $hour < self::CALLING_HOURS_END;
+    }
+
+    public function isOpen(): bool
+    {
+        return in_array($this->status, LeadStatus::open(), true);
+    }
+
+    public function isOverdue(?CarbonImmutable $now = null): bool
+    {
+        return $this->isOpen() && $this->follow_up_at !== null && $this->follow_up_at->lte($now ?? CarbonImmutable::now());
     }
 }

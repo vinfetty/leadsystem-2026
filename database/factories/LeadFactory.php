@@ -9,6 +9,7 @@ use App\Models\Lead;
 use App\Models\LeadSource;
 use App\Models\User;
 use App\Support\StateTimeZone;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -60,6 +61,25 @@ class LeadFactory extends Factory
     public function withStatus(LeadStatus $status): static
     {
         return $this->state(['status' => $status]);
+    }
+
+    public function callbackAt(CarbonImmutable $at): static
+    {
+        return $this->state(['status' => LeadStatus::Scheduled, 'follow_up_at' => $at]);
+    }
+
+    /**
+     * A call-back at a sensible hour for the lead, some days either side of today.
+     */
+    public function callbackWithinDays(int $from, int $to): static
+    {
+        return $this->state(fn (array $lead): array => [
+            'status' => LeadStatus::Scheduled,
+            'follow_up_at' => CarbonImmutable::now($lead['timezone'])
+                ->addDays(fake()->numberBetween($from, $to))
+                ->setTime(fake()->numberBetween(9, 19), fake()->randomElement([0, 15, 30, 45]))
+                ->utc(),
+        ]);
     }
 
     /**

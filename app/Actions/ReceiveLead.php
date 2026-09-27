@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\LeadActionType;
 use App\Enums\LeadStatus;
 use App\Models\Lead;
 use App\Models\LeadSource;
@@ -41,7 +42,7 @@ class ReceiveLead
                 'consent_ip' => $ipAddress,
             ]);
 
-            $lead->actions()->create(['type' => 'received', 'note' => 'Received from '.$source->name]);
+            $lead->actions()->create(['type' => LeadActionType::Received, 'note' => 'Received from '.$source->name]);
 
             return $lead;
         });

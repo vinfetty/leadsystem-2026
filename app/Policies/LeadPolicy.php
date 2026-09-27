@@ -22,6 +22,14 @@ class LeadPolicy
     }
 
     /**
+     * Logging calls and notes, scheduling a call-back, closing the lead.
+     */
+    public function update(User $user, Lead $lead): bool
+    {
+        return $user->isAdmin() || $lead->assigned_to === $user->id;
+    }
+
+    /**
      * Handing a lead to a named broker, or moving it between brokers.
      */
     public function assign(User $user, Lead $lead): bool
