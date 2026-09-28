@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#
+# Runs on the server after a release has been unpacked there.
+# It installs nothing: vendor/ and public/build/ arrive already built.
+
+set -euo pipefail
+cd "$(dirname "$0")"
+
+fail() {
+    echo "deploy: $1" >&2
+    exit 1
+}
+
+test -f vendor/autoload.php || fail "vendor/autoload.php is missing, so the release was not unpacked."
+test -f public/build/manifest.json || fail "public/build/manifest.json is missing, so the release was not unpacked."
+test -f .env || fail ".env is missing. Copy .env.example to .env on the server and fill it in. The README lists the settings."
+grep -q '^APP_KEY=base64:' .env || fail "APP_KEY is not set in .env. Run: php artisan key:generate"
+
+mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
+if grep -q '^DB_CONNECTION=sqlite' .env && [ ! -f database/database.sqlite ]; then
+    touch database/database.sqlite
+fi
+
+php artisan config:clear
+php artisan migrate --force
+
+# The demo starts every release from clean invented data.
+if grep -q '^DEMO_MODE=true' .env; then
+    php artisan demo:reset
+fi
+
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+echo "deploy: done"

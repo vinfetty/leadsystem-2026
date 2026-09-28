@@ -1,0 +1,116 @@
+name: Test and deploy
+
+# Every push and pull request runs the tests. A push to main also deploys the demo, but only once the repository
+# variable DEPLOY_ENABLED is "true" and the four CW_* secrets exist, so the workflow stays green before hosting is set up.
+#
+# The server never runs Composer or npm. The code, the production vendor folder and the front-end build are packed
+# here into one release and unpacked over the application folder, then ./deploy.sh runs there over SSH.
+# Files deleted from the repository stay behind on the server unused; nothing loads them.
+#
+# Both jobs run on a pinned ubuntu-24.04 image, and PHP matches the server's version so the platform check that
+# Composer writes into vendor is valid there too.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  DEMO_URL: https://leads.vinfetty.com
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: composer
+          coverage: none
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install packages and build the front end
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci --no-audit --no-fund
+          npm run build
+          test -f public/build/manifest.json
+
+      - name: Run the tests
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          vendor/bin/phpunit --fail-on-skipped
+
+      - name: Check the code style
+        run: vendor/bin/pint --test
+
+      - name: Build the production vendor folder
+        # After the tests, the dev packages are removed so vendor holds exactly what the server runs.
+        run: |
+          rm .env
+          composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+          test -f vendor/autoload.php
+
+      - name: Pack the release
+        # Only files and symlinks are archived: the release is unpacked over folders the SSH user may not own, and
+        # tar fails when it cannot reset such a folder's mode. Tests, docs and workflows are not needed on the server.
+        run: |
+          {
+            git ls-files -z -- . ':!tests' ':!docs' ':!.github' ':!phpunit.xml'
+            find vendor public/build \( -type f -o -type l \) -print0
+          } | tar --null -czf release.tar.gz -T -
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release
+          path: release.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: deploy-demo
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release
+
+      - name: Install the SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$CW_SSH_KEY" > ~/.ssh/cloudways
+          chmod 600 ~/.ssh/cloudways
+          ssh-keyscan -H "$CW_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          printf 'Host cloudways\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/cloudways\n  IdentitiesOnly yes\n  ServerAliveInterval 30\n' "$CW_HOST" "$CW_USER" > ~/.ssh/config
+        env:
+          CW_HOST: ${{ secrets.CW_HOST }}
+          CW_USER: ${{ secrets.CW_USER }}
+          CW_SSH_KEY: ${{ secrets.CW_SSH_KEY }}
+
+      - name: Unpack the release on the server
+        env:
+          CW_APP_PATH: ${{ secrets.CW_APP_PATH }}
+        run: |
+          test -n "$CW_APP_PATH" || { echo "CW_APP_PATH secret is not set." >&2; exit 1; }
+          ssh cloudways "umask 002 && cd '$CW_APP_PATH' && tar -xzmf - --no-same-owner --no-same-permissions && test -f vendor/autoload.php" < release.tar.gz
+
+      - name: Run deploy.sh
+        env:
+          CW_APP_PATH: ${{ secrets.CW_APP_PATH }}
+        run: ssh cloudways "cd '$CW_APP_PATH' && bash deploy.sh"
+
+      - name: Check the demo answers
+        run: curl --fail --silent --show-error --max-time 30 --output /dev/null "$DEMO_URL/up"
