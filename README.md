@@ -1,14 +1,14 @@
 # Lead System
 
-A mortgage lead system I first wrote in plain PHP between 2002 and 2005, rebuilt in 2026 with Laravel and Livewire.
+A 2026 rebuild, in Laravel and Livewire, of part of the lead system behind Direct Business Solutions, the mortgage lead generation company I owned and ran from 2003 to 2008.
 
-The original took leads from a network of websites, handed them to brokers, and tracked every call-back. This repository is how I would build the same thing today. It runs on invented data and is a portfolio piece, not a product.
+I wrote the original in plain PHP. It captured leads from a network of websites, had a processing team verify each one by phone, matched it against every buyer's rules and routed it to the right buyer. The [case study](https://vinfetty.com/work/mortgage-lead-generation) tells that story. This repository is how I would build the same system today. It runs on invented data and is a portfolio piece, not a product.
 
 ![The lead inbox, signed in as an admin](docs/screenshots/inbox.png)
 
 ## Then and now
 
-Every figure in the 2005 column was measured from the original code.
+Every figure in the 2005 column was measured from a copy of the original code as it stood in late 2005.
 
 | | 2005 | 2026 |
 |---|---|---|
