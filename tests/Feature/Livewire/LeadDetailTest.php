@@ -158,7 +158,7 @@ class LeadDetailTest extends TestCase
             ->set('actionType', 'verified')
             ->call('logAction');
 
-        $page->assertHasNoErrors()->assertSeeInOrder([
+        $page->assertHasNoErrors()->assertSet('notice', 'Routed to Cedar Ridge Lending for $45.00.')->assertSeeInOrder([
             'Routed to Cedar Ridge Lending', '$45.00',
             'Ohio Bank', 'Does not buy leads in TX',
             'Cedar Ridge Lending', 'Took the lead',
@@ -178,7 +178,7 @@ class LeadDetailTest extends TestCase
             ->set('actionType', 'verified')
             ->call('logAction');
 
-        $page->assertSee('No buyer could take this lead');
+        $page->assertSet('notice', 'No buyer could take this lead.');
         $this->assertSame(LeadStatus::Rejected, $lead->refresh()->status);
     }
 

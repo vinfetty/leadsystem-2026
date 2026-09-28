@@ -83,7 +83,9 @@ class LeadDetail extends Component
 
         $logLeadAction->handle($this->lead, Auth::user(), $type, $this->note);
 
-        $this->notice = 'Saved to the history.';
+        $this->notice = $type === LeadActionType::Verified
+            ? $this->lead->actions()->value('note').'.'
+            : 'Saved to the history.';
         $this->reset('note');
         $this->actionType = $this->loggableTypes()[0]->value;
     }
