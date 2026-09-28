@@ -169,7 +169,7 @@ class LeadDetail extends Component
 
     public function render(): View
     {
-        $this->lead->refresh()->load(['source', 'processor', 'actions.user']);
+        $this->lead->refresh()->load(['source', 'processor', 'actions.user', 'routingAttempts.buyer']);
 
         return view('livewire.lead-detail', [
             'loggable' => $this->loggableTypes(),

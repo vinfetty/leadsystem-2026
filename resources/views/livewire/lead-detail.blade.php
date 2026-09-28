@@ -94,6 +94,54 @@
                 </dl>
             </x-card>
 
+            @if ($lead->routingAttempts->isNotEmpty())
+                @php $routing = $lead->routingAttempts->first(); @endphp
+                <x-card title="Routing">
+                    <p class="text-sm text-stone-700">
+                        @if ($routing->wasRouted())
+                            <span class="font-medium text-stone-900">Routed to {{ $routing->buyer->name }}</span> for {{ $routing->price() }},
+                        @else
+                            <span class="font-medium text-stone-900">No buyer could take this lead,</span>
+                        @endif
+                        <time datetime="{{ $routing->created_at->toIso8601String() }}" title="{{ $routing->created_at->toDayDateTimeString() }}">{{ $routing->created_at->diffForHumans() }}</time>.
+                        @if ($lead->routingAttempts->count() > 1)
+                            This lead has been through the buyers {{ $lead->routingAttempts->count() }} times.
+                        @endif
+                    </p>
+
+                    <table class="mt-4 w-full text-sm">
+                        <caption class="sr-only">What was decided about each buyer, in the order they were offered the lead</caption>
+                        <thead class="text-left text-xs font-medium tracking-wide text-stone-500 uppercase">
+                            <tr>
+                                <th scope="col" class="py-2 pr-4">Buyer</th>
+                                <th scope="col" class="py-2 pr-4">Tier</th>
+                                <th scope="col" class="py-2">Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-stone-100 border-t border-stone-100">
+                            @foreach ($routing->evaluations as $evaluation)
+                                <tr wire:key="evaluation-{{ $routing->id }}-{{ $evaluation['buyer_id'] }}" class="align-top">
+                                    <td class="py-2 pr-4 font-medium text-stone-900">{{ $evaluation['buyer'] }}</td>
+                                    <td class="py-2 pr-4 text-stone-700 tabular-nums">{{ $evaluation['tier'] }}</td>
+                                    <td class="py-2">
+                                        @switch($evaluation['outcome'])
+                                            @case(App\Models\RoutingAttempt::CHOSEN)
+                                                <span class="font-medium text-green-800">Took the lead</span>
+                                                @break
+                                            @case(App\Models\RoutingAttempt::OUTRANKED)
+                                                <span class="text-stone-500">Would have taken it, but a buyer ahead of it did</span>
+                                                @break
+                                            @default
+                                                <span class="text-stone-700">{{ $evaluation['reason'] }}</span>
+                                        @endswitch
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </x-card>
+            @endif
+
             <x-card title="History">
                 @if ($lead->actions->isEmpty())
                     <p class="text-sm text-stone-500">Nothing recorded yet.</p>
@@ -166,7 +214,9 @@
                     @elseif ($lead->isOpen())
                         <p class="text-sm text-stone-500">None scheduled.</p>
                     @else
-                        <p class="text-sm text-stone-500">This lead is {{ strtolower($lead->status->label()) }}. Reopen it to schedule a call-back.</p>
+                        <p class="text-sm text-stone-500">
+                            This lead is {{ strtolower($lead->status->label()) }}{{ $lead->status === App\Enums\LeadStatus::Routed ? '.' : '. Reopen it to schedule a call-back.' }}
+                        </p>
                     @endif
 
                     @if ($lead->isOpen())

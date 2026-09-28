@@ -4,6 +4,7 @@ namespace Tests\Feature\Livewire;
 
 use App\Enums\LeadStatus;
 use App\Livewire\LeadDetail;
+use App\Models\Buyer;
 use App\Models\Lead;
 use App\Models\LeadAction;
 use App\Models\User;
@@ -144,6 +145,71 @@ class LeadDetailTest extends TestCase
         $this->assertDatabaseCount('lead_actions', 0);
     }
 
+    public function test_verifying_a_lead_routes_it_and_shows_where_it_went_and_why(): void
+    {
+        $processor = User::factory()->create();
+        Buyer::factory()->tier(1)->servingStates('OH')->create(['name' => 'Ohio Bank']);
+        Buyer::factory()->tier(2)->payingCents(4500)->create(['name' => 'Cedar Ridge Lending']);
+        Buyer::factory()->tier(3)->create(['name' => 'Elmstead Funding']);
+        $lead = Lead::factory()->inState('TX')->assignedTo($processor)->create();
+
+        $page = Livewire::actingAs($processor)
+            ->test(LeadDetail::class, ['lead' => $lead])
+            ->set('actionType', 'verified')
+            ->call('logAction');
+
+        $page->assertHasNoErrors()->assertSeeInOrder([
+            'Routed to Cedar Ridge Lending', '$45.00',
+            'Ohio Bank', 'Does not buy leads in TX',
+            'Cedar Ridge Lending', 'Took the lead',
+            'Elmstead Funding', 'a buyer ahead of it did',
+        ]);
+        $this->assertSame(LeadStatus::Routed, $lead->refresh()->status);
+    }
+
+    public function test_verifying_a_lead_no_buyer_wants_puts_it_in_the_rejected_bucket(): void
+    {
+        $processor = User::factory()->create();
+        Buyer::factory()->servingStates('OH')->create();
+        $lead = Lead::factory()->inState('TX')->assignedTo($processor)->create();
+
+        $page = Livewire::actingAs($processor)
+            ->test(LeadDetail::class, ['lead' => $lead])
+            ->set('actionType', 'verified')
+            ->call('logAction');
+
+        $page->assertSee('No buyer could take this lead');
+        $this->assertSame(LeadStatus::Rejected, $lead->refresh()->status);
+    }
+
+    public function test_a_routed_lead_cannot_be_reopened(): void
+    {
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->withStatus(LeadStatus::Routed)->create();
+
+        $page = Livewire::actingAs($processor)
+            ->test(LeadDetail::class, ['lead' => $lead])
+            ->set('actionType', 'reopened')
+            ->call('logAction');
+
+        $page->assertHasErrors(['actionType' => 'in']);
+        $this->assertSame(LeadStatus::Routed, $lead->refresh()->status);
+    }
+
+    public function test_escapes_buyer_names_in_the_routing_panel(): void
+    {
+        $processor = User::factory()->create();
+        Buyer::factory()->create(['name' => '<script>alert("x")</script>']);
+        $lead = Lead::factory()->assignedTo($processor)->create();
+
+        $page = Livewire::actingAs($processor)
+            ->test(LeadDetail::class, ['lead' => $lead])
+            ->set('actionType', 'verified')
+            ->call('logAction');
+
+        $page->assertSee('&lt;script&gt;', escape: false)->assertDontSee('<script>alert("x")</script>', escape: false);
+    }
+
     public function test_reopening_a_dead_lead_returns_it_to_the_processor(): void
     {
         $processor = User::factory()->create();
@@ -215,11 +281,11 @@ class LeadDetailTest extends TestCase
         $page->assertHasErrors(['callbackAt' => 'required'])->assertSee('Choose a date and time.');
     }
 
-    public function test_scheduling_is_refused_on_a_closed_lead(): void
+    public function test_scheduling_is_refused_on_a_routed_lead(): void
     {
         $this->travelTo(self::NOW_UTC);
         $processor = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($processor)->withStatus(LeadStatus::Closed)->create();
+        $lead = Lead::factory()->assignedTo($processor)->withStatus(LeadStatus::Routed)->create();
 
         $page = Livewire::actingAs($processor)
             ->test(LeadDetail::class, ['lead' => $lead])
@@ -228,7 +294,7 @@ class LeadDetailTest extends TestCase
 
         $page->assertHasErrors('callbackAt');
         $lead->refresh();
-        $this->assertSame(LeadStatus::Closed, $lead->status);
+        $this->assertSame(LeadStatus::Routed, $lead->status);
         $this->assertNull($lead->follow_up_at);
     }
 
@@ -284,9 +350,9 @@ class LeadDetailTest extends TestCase
         $this->assertSame($colleague->id, $lead->refresh()->assigned_to);
     }
 
-    public function test_taking_a_closed_lead_is_refused_and_returns_to_the_inbox(): void
+    public function test_taking_a_routed_lead_is_refused_and_returns_to_the_inbox(): void
     {
-        $lead = Lead::factory()->withStatus(LeadStatus::Closed)->create();
+        $lead = Lead::factory()->withStatus(LeadStatus::Routed)->create();
 
         $page = Livewire::actingAs(User::factory()->create())->test(LeadDetail::class, ['lead' => $lead])->call('claim');
 

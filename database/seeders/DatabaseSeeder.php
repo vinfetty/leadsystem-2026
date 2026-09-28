@@ -21,6 +21,6 @@ class DatabaseSeeder extends Seeder
         User::factory()->create(['name' => 'Demo Processor', 'email' => 'processor@example.com']);
         User::factory()->count(2)->create();
 
-        $this->call(LeadSeeder::class);
+        $this->call([BuyerSeeder::class, LeadSeeder::class]);
     }
 }

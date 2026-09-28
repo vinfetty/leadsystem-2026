@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'lead_source_id', 'assigned_to', 'status',
@@ -70,6 +71,24 @@ class Lead extends Model
     public function actions(): HasMany
     {
         return $this->hasMany(LeadAction::class)->latest()->latest('id');
+    }
+
+    /**
+     * Every pass of this lead through the buyers, newest first.
+     *
+     * @return HasMany<RoutingAttempt, $this>
+     */
+    public function routingAttempts(): HasMany
+    {
+        return $this->hasMany(RoutingAttempt::class)->latest()->latest('id');
+    }
+
+    /**
+     * @return HasOne<RoutingAttempt, $this>
+     */
+    public function latestRouting(): HasOne
+    {
+        return $this->hasOne(RoutingAttempt::class)->latestOfMany();
     }
 
     /**

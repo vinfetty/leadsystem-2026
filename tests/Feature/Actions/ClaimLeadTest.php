@@ -54,7 +54,7 @@ class ClaimLeadTest extends TestCase
         $this->assertDatabaseMissing('lead_actions', ['user_id' => $second->id]);
     }
 
-    #[TestWith([LeadStatus::Closed])]
+    #[TestWith([LeadStatus::Routed])]
     #[TestWith([LeadStatus::Dead])]
     public function test_refuses_a_lead_that_is_no_longer_open(LeadStatus $status): void
     {

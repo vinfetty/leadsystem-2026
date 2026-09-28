@@ -12,10 +12,28 @@
     <body class="min-h-full bg-stone-50 font-sans text-stone-900 antialiased">
         <header class="border-b border-stone-200 bg-white">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-                <a href="{{ route('leads.index') }}" class="flex items-center gap-2.5 font-semibold tracking-tight">
-                    <span class="grid size-7 place-items-center rounded-md bg-brand-700 text-xs text-white" aria-hidden="true">LS</span>
-                    {{ config('app.name') }}
-                </a>
+                <div class="flex items-center gap-6">
+                    <a href="{{ route('leads.index') }}" class="flex items-center gap-2.5 font-semibold tracking-tight">
+                        <span class="grid size-7 place-items-center rounded-md bg-brand-700 text-xs text-white" aria-hidden="true">LS</span>
+                        <span class="hidden sm:inline">{{ config('app.name') }}</span>
+                    </a>
+
+                    <nav class="flex items-center gap-1 text-sm font-medium" aria-label="Main">
+                        <a href="{{ route('leads.index') }}" @class([
+                            'rounded-md px-2.5 py-1.5',
+                            'bg-stone-100 text-stone-900' => request()->routeIs('leads.*'),
+                            'text-stone-600 hover:text-stone-900' => ! request()->routeIs('leads.*'),
+                        ]) @if (request()->routeIs('leads.*')) aria-current="page" @endif>Leads</a>
+
+                        @can('viewAny', App\Models\Buyer::class)
+                            <a href="{{ route('buyers.index') }}" @class([
+                                'rounded-md px-2.5 py-1.5',
+                                'bg-stone-100 text-stone-900' => request()->routeIs('buyers.*'),
+                                'text-stone-600 hover:text-stone-900' => ! request()->routeIs('buyers.*'),
+                            ]) @if (request()->routeIs('buyers.*')) aria-current="page" @endif>Buyers</a>
+                        @endcan
+                    </nav>
+                </div>
 
                 <div class="flex items-center gap-3 text-sm">
                     <span class="hidden text-stone-600 sm:inline">{{ auth()->user()->name }}</span>

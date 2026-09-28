@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Actions\LogLeadAction;
+use App\Enums\LeadActionType;
 use App\Models\Lead;
 use App\Models\LeadAction;
 use App\Models\LeadSource;
@@ -19,9 +21,10 @@ class LeadSeeder extends Seeder
      */
     public const DEMO_TOKEN_PREFIX = 'demo-token-';
 
-    public function run(): void
+    public function run(LogLeadAction $logLeadAction): void
     {
         $processors = User::query()->processors()->get();
+        $toVerify = collect();
 
         $sources = collect([
             ['name' => 'Home Loan Finder', 'code' => 'S101', 'website' => 'homeloanfinder.example'],
@@ -52,6 +55,15 @@ class LeadSeeder extends Seeder
                     ->callbackWithinDays(-1, 5)
                     ->receivedWithinDays(4)
                     ->create();
+
+                $toVerify = $toVerify->concat(
+                    Lead::factory()
+                        ->count(3)
+                        ->recycle($source)
+                        ->assignedTo($processor)
+                        ->receivedWithinDays(2)
+                        ->create()
+                );
             }
         }
 
@@ -65,6 +77,13 @@ class LeadSeeder extends Seeder
             if ($lead->follow_up_at !== null) {
                 LeadAction::factory()->scheduled($lead)->create();
             }
+        });
+
+        // These go through the real routing, so the demo's routed and
+        // rejected leads were decided by the same rules a visitor sees.
+        $toVerify->shuffle()->each(function (Lead $lead) use ($logLeadAction): void {
+            $logLeadAction->handle($lead, $lead->processor, LeadActionType::Called, 'Confirmed the details by phone.');
+            $logLeadAction->handle($lead, $lead->processor, LeadActionType::Verified);
         });
     }
 }

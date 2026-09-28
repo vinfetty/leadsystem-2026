@@ -154,7 +154,7 @@ class LeadInbox extends Component
     public function leads(): LengthAwarePaginator
     {
         return $this->filteredLeads()
-            ->with(['source', 'processor'])
+            ->with(['source', 'processor', 'latestRouting.buyer'])
             ->when($this->due, fn (Builder $query) => $query->oldest('follow_up_at'))
             ->latest()
             ->latest('id')

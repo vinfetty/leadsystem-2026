@@ -61,7 +61,7 @@ class LeadPolicyTest extends TestCase
     #[TestWith([LeadStatus::Contacted, null, true])]
     #[TestWith([LeadStatus::New, self::COLLEAGUE, false])]
     #[TestWith([LeadStatus::New, self::PROCESSOR, false])]
-    #[TestWith([LeadStatus::Closed, null, false])]
+    #[TestWith([LeadStatus::Routed, null, false])]
     #[TestWith([LeadStatus::Dead, null, false])]
     public function test_a_lead_may_be_taken_only_while_open_and_unassigned(LeadStatus $status, ?int $assignedTo, bool $allowed): void
     {

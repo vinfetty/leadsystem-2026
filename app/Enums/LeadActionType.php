@@ -13,7 +13,9 @@ enum LeadActionType: string
     case LeftMessage = 'left_message';
     case Scheduled = 'scheduled';
     case Note = 'note';
-    case Closed = 'closed';
+    case Verified = 'verified';
+    case Routed = 'routed';
+    case Rejected = 'rejected';
     case Dead = 'dead';
     case Reopened = 'reopened';
 
@@ -26,7 +28,9 @@ enum LeadActionType: string
             self::LeftMessage => 'Left a message',
             self::Scheduled => 'Call-back scheduled',
             self::Note => 'Note',
-            self::Closed => 'Closed',
+            self::Verified => 'Verified by phone',
+            self::Routed => 'Routed to a buyer',
+            self::Rejected => 'Rejected',
             self::Dead => 'Marked dead',
             self::Reopened => 'Reopened',
         };
@@ -39,7 +43,7 @@ enum LeadActionType: string
     {
         return match ($this) {
             self::Note => 'Add a note',
-            self::Closed => 'Close the lead',
+            self::Verified => 'Verified, send to a buyer',
             self::Dead => 'Mark the lead dead',
             self::Reopened => 'Reopen the lead',
             default => $this->label(),
@@ -50,13 +54,17 @@ enum LeadActionType: string
      * What a person may record by hand on a lead in the given status. The
      * other types are written by the system as a side effect of an action.
      *
+     * A routed lead has been delivered, so it takes notes and nothing else.
+     *
      * @return array<int, self>
      */
     public static function loggableFor(LeadStatus $status): array
     {
-        return in_array($status, LeadStatus::open(), true)
-            ? [self::Called, self::LeftMessage, self::Note, self::Closed, self::Dead]
-            : [self::Note, self::Reopened];
+        return match (true) {
+            in_array($status, LeadStatus::open(), true) => [self::Called, self::LeftMessage, self::Note, self::Verified, self::Dead],
+            $status === LeadStatus::Routed => [self::Note],
+            default => [self::Note, self::Reopened],
+        };
     }
 
     /**

@@ -4,8 +4,10 @@ namespace Tests\Feature\Livewire;
 
 use App\Enums\LeadStatus;
 use App\Livewire\LeadInbox;
+use App\Models\Buyer;
 use App\Models\Lead;
 use App\Models\LeadSource;
+use App\Models\RoutingAttempt;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Factories\LeadFactory;
@@ -74,16 +76,16 @@ class LeadInboxTest extends TestCase
         $inbox->assertSeeInOrder(['Newerlead', 'Olderlead']);
     }
 
-    public function test_hides_closed_and_dead_leads_until_every_status_is_chosen(): void
+    public function test_hides_routed_and_dead_leads_until_every_status_is_chosen(): void
     {
-        $this->leadNamed('Closedlead')->withStatus(LeadStatus::Closed)->create();
+        $this->leadNamed('Routedlead')->withStatus(LeadStatus::Routed)->create();
         $this->leadNamed('Deadlead')->withStatus(LeadStatus::Dead)->create();
         $this->leadNamed('Newlead')->create();
 
         $inbox = Livewire::actingAs(User::factory()->create())->test(LeadInbox::class);
 
-        $inbox->assertSee('Newlead')->assertDontSee(['Closedlead', 'Deadlead']);
-        $inbox->set('status', 'all')->assertSee(['Newlead', 'Closedlead', 'Deadlead']);
+        $inbox->assertSee('Newlead')->assertDontSee(['Routedlead', 'Deadlead']);
+        $inbox->set('status', 'all')->assertSee(['Newlead', 'Routedlead', 'Deadlead']);
     }
 
     public function test_filters_by_status(): void
@@ -150,13 +152,13 @@ class LeadInboxTest extends TestCase
     public function test_falls_back_to_the_default_view_for_unknown_filter_values_in_the_url(): void
     {
         $this->leadNamed('Openlead')->create();
-        $this->leadNamed('Closedlead')->withStatus(LeadStatus::Closed)->create();
+        $this->leadNamed('Routedlead')->withStatus(LeadStatus::Routed)->create();
 
         $inbox = Livewire::actingAs(User::factory()->create())
             ->withQueryParams(['status' => "open' OR 1=1 --", 'state' => 'ZZ', 'source' => '1 OR 1=1', 'owner' => 'everyone'])
             ->test(LeadInbox::class);
 
-        $inbox->assertSet('state', 'ZZ')->assertSee('Openlead')->assertDontSee('Closedlead');
+        $inbox->assertSet('state', 'ZZ')->assertSee('Openlead')->assertDontSee('Routedlead');
     }
 
     public function test_escapes_lead_details_in_the_list(): void
@@ -173,7 +175,7 @@ class LeadInboxTest extends TestCase
         $processor = User::factory()->create();
         Lead::factory()->count(2)->assignedTo($processor)->create();
         Lead::factory()->count(3)->create();
-        Lead::factory()->assignedTo($processor)->withStatus(LeadStatus::Closed)->create();
+        Lead::factory()->assignedTo($processor)->withStatus(LeadStatus::Routed)->create();
         Lead::factory()->assignedTo(User::factory()->create())->create();
 
         $inbox = Livewire::actingAs($processor)->test(LeadInbox::class);
@@ -198,18 +200,38 @@ class LeadInboxTest extends TestCase
         $this->assertSame(2, $inbox->instance()->summary['due']);
     }
 
-    public function test_a_closed_lead_is_never_due(): void
+    public function test_a_routed_lead_is_never_due(): void
     {
         $this->travelTo('2026-03-10 15:00:00');
         $processor = User::factory()->create();
-        $this->leadNamed('Closedlead')->assignedTo($processor)
+        $this->leadNamed('Routedlead')->assignedTo($processor)
             ->callbackAt(CarbonImmutable::parse('2026-03-10 14:00'))
-            ->withStatus(LeadStatus::Closed)
+            ->withStatus(LeadStatus::Routed)
             ->create();
 
         $inbox = Livewire::actingAs($processor)->test(LeadInbox::class)->set('status', 'all')->set('due', true);
 
-        $inbox->assertDontSee('Closedlead');
+        $inbox->assertDontSee('Routedlead');
+    }
+
+    public function test_shows_which_buyer_a_routed_lead_went_to(): void
+    {
+        $buyer = Buyer::factory()->create(['name' => 'Alder National Bank']);
+        $lead = Lead::factory()->withStatus(LeadStatus::Routed)->create();
+        RoutingAttempt::factory()->for($lead)->for($buyer)->create();
+
+        $inbox = Livewire::actingAs(User::factory()->admin()->create())->test(LeadInbox::class)->set('status', 'routed');
+
+        $inbox->assertSee('to Alder National Bank');
+    }
+
+    public function test_only_an_admin_is_shown_the_way_to_the_buyers(): void
+    {
+        $asProcessor = $this->actingAs(User::factory()->create())->get(route('leads.index'));
+        $asAdmin = $this->actingAs(User::factory()->admin()->create())->get(route('leads.index'));
+
+        $asProcessor->assertDontSee(route('buyers.index'));
+        $asAdmin->assertSee(route('buyers.index'));
     }
 
     public function test_links_each_lead_to_its_own_page(): void

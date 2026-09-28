@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * Where a lead sits in the processor workflow.
+ * Where a lead sits on its way to a buyer.
  *
  * The 2005 system tracked this as a bare integer column called
  * `actionlevel` (0, 20, 30 …) whose meaning lived in the heads of the
@@ -16,7 +16,8 @@ enum LeadStatus: string
     case Assigned = 'assigned';
     case Contacted = 'contacted';
     case Scheduled = 'scheduled';
-    case Closed = 'closed';
+    case Routed = 'routed';
+    case Rejected = 'rejected';
     case Dead = 'dead';
 
     public function label(): string
@@ -26,7 +27,8 @@ enum LeadStatus: string
             self::Assigned => 'Assigned',
             self::Contacted => 'Contacted',
             self::Scheduled => 'Call scheduled',
-            self::Closed => 'Closed',
+            self::Routed => 'Routed',
+            self::Rejected => 'Rejected',
             self::Dead => 'Dead',
         };
     }

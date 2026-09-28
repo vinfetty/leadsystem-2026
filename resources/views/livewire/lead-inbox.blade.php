@@ -174,6 +174,11 @@
 
                             <td class="hidden px-3 py-3 sm:table-cell">
                                 <x-status-badge :status="$lead->status" />
+                                @if ($lead->status === App\Enums\LeadStatus::Routed && $lead->latestRouting?->buyer)
+                                    <p class="mt-1 truncate text-xs text-stone-500" title="{{ $lead->latestRouting->buyer->name }}">
+                                        to {{ $lead->latestRouting->buyer->name }}
+                                    </p>
+                                @endif
                                 @if ($lead->isOpen() && $lead->follow_up_at)
                                     <p @class(['mt-1 truncate text-xs tabular-nums', 'font-medium text-red-700' => $lead->isOverdue(), 'text-stone-500' => ! $lead->isOverdue()])
                                         title="Call back {{ $lead->follow_up_at->setTimezone($lead->timezone)->format('D j M Y, g:i a T') }}">
