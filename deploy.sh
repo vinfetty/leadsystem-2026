@@ -6,6 +6,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+echo "deploy: running in $(pwd -P) on PHP $(php -r 'echo PHP_VERSION;')"
+
 fail() {
     echo "deploy: $1" >&2
     exit 1
