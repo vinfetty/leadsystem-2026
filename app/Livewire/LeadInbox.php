@@ -25,8 +25,8 @@ use Livewire\WithPagination;
 /**
  * Every lead a person may see, filtered and assigned from one screen.
  *
- * Stands in for the 2005 list pages, which were copied once per partner
- * and once per view: viewleadsmort, vleadsmall, mortgageleads,
+ * Stands in for the 2005 list pages, which were copied once per view and
+ * once per lender: viewleadsmort, vleadsmall, mortgageleads,
  * mortgageleads_ameriquest, mortgageleads_lowermybills, mortgageassigned,
  * mortgageassigned_home123 and the rest.
  */

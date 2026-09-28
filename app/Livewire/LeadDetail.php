@@ -22,7 +22,7 @@ use Livewire\Component;
  * One lead: who they are, what has happened, and what to do next.
  *
  * Stands in for the 2005 action pages (actionviewmort and its
- * per-partner copies) and the separate schedule pages.
+ * per-lender copies) and the separate schedule pages.
  */
 class LeadDetail extends Component
 {

@@ -125,7 +125,7 @@
                         @endif
                         <th scope="col" class="px-3 py-3">Lead</th>
                         <th scope="col" class="hidden px-3 py-3 sm:table-cell lg:w-44">Location</th>
-                        <th scope="col" class="hidden px-3 py-3 md:table-cell lg:w-48">Loan</th>
+                        <th scope="col" class="hidden px-3 py-3 md:table-cell lg:w-56">Loan</th>
                         <th scope="col" class="hidden px-3 py-3 xl:table-cell xl:w-40">Source</th>
                         <th scope="col" class="hidden px-3 py-3 sm:table-cell lg:w-32">Status</th>
                         <th scope="col" class="px-3 py-3 lg:w-40">Broker</th>

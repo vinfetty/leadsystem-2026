@@ -10,11 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A site or partner that sends leads in.
+ * A website that sends leads in.
  *
- * Replaces the `sitenum` column and the per-partner copies of every page
- * (`actionviewmort_ameriquest.php`, `actionviewmort_lmb.php`, …): a new
- * partner is now a row, not a new set of files.
+ * Replaces the `sitenum` number the 2005 system stamped on each lead.
+ * Every source has its own intake token, so one can be switched off
+ * without touching the others.
  */
 #[Fillable(['name', 'code', 'website', 'intake_token_hash', 'active'])]
 #[Hidden(['intake_token_hash'])]

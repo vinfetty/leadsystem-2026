@@ -20,7 +20,15 @@ class LeadActionFactory extends Factory
         return [
             'lead_id' => Lead::factory(),
             'type' => fake()->randomElement([LeadActionType::Called, LeadActionType::LeftMessage, LeadActionType::Note]),
-            'note' => fake()->sentence(),
+            'note' => fake()->randomElement([
+                'Wants figures for a 15-year term.',
+                'Comparing with another lender, deciding by Friday.',
+                'Asked for the rate sheet by email.',
+                'No answer on the mobile, tried the home number.',
+                'Spouse needs to be on the next call.',
+                'Appraisal came in lower than expected.',
+                'Prefers a call after 5 pm.',
+            ]),
         ];
     }
 
