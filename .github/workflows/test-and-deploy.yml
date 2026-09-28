@@ -110,7 +110,7 @@ jobs:
       - name: Run deploy.sh
         env:
           CW_APP_PATH: ${{ secrets.CW_APP_PATH }}
-        run: ssh cloudways "cd '$CW_APP_PATH' && bash deploy.sh"
+        run: ssh cloudways "cd '$CW_APP_PATH' && APP_URL='$DEMO_URL' bash deploy.sh"
 
       - name: Check the demo answers
         run: curl --fail --silent --show-error --max-time 30 --output /dev/null "$DEMO_URL/up"

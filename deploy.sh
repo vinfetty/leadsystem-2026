@@ -13,7 +13,18 @@ fail() {
 
 test -f vendor/autoload.php || fail "vendor/autoload.php is missing, so the release was not unpacked."
 test -f public/build/manifest.json || fail "public/build/manifest.json is missing, so the release was not unpacked."
-test -f .env || fail ".env is missing. Copy .env.example to .env on the server and fill it in. The README lists the settings."
+# The first release finds no .env, so one is written for the public demo.
+# An .env that already exists is never touched.
+if [ ! -f .env ]; then
+    sed -e 's|^APP_ENV=.*|APP_ENV=production|' \
+        -e 's|^APP_DEBUG=.*|APP_DEBUG=false|' \
+        -e "s|^APP_URL=.*|APP_URL=${APP_URL:-https://leads.vinfetty.com}|" \
+        -e 's|^DEMO_MODE=.*|DEMO_MODE=true|' \
+        .env.example > .env
+    php artisan key:generate --force --no-interaction
+    echo "deploy: wrote a new .env for the demo"
+fi
+
 grep -q '^APP_KEY=base64:' .env || fail "APP_KEY is not set in .env. Run: php artisan key:generate"
 
 mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
