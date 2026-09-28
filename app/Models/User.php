@@ -45,9 +45,9 @@ class User extends Authenticatable
     /**
      * @param  Builder<self>  $query
      */
-    public function scopeBrokers(Builder $query): void
+    public function scopeProcessors(Builder $query): void
     {
-        $query->where('role', UserRole::Broker);
+        $query->where('role', UserRole::Processor);
     }
 
     public function isAdmin(): bool

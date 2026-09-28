@@ -124,14 +124,14 @@
         <aside class="space-y-6">
             <x-card title="Assigned to">
                 <p class="text-sm font-medium">
-                    @if ($lead->broker)
-                        {{ $lead->broker->is($user) ? 'You' : $lead->broker->name }}
+                    @if ($lead->processor)
+                        {{ $lead->processor->is($user) ? 'You' : $lead->processor->name }}
                     @else
                         <span class="text-stone-500">Nobody yet</span>
                     @endif
                 </p>
 
-                @if (! $lead->broker && ! $user->isAdmin())
+                @if (! $lead->processor && ! $user->isAdmin())
                     @can('claim', $lead)
                         <button type="button" wire:click="claim" class="button mt-3 w-full">Take lead</button>
                     @endcan
@@ -141,9 +141,9 @@
                     <form wire:submit="assign" class="mt-3 flex gap-2">
                         <label for="assignTo" class="sr-only">Assign to</label>
                         <select wire:model="assignTo" id="assignTo" class="field">
-                            <option value="">Choose a broker</option>
-                            @foreach ($this->brokers as $broker)
-                                <option value="{{ $broker->id }}" @disabled($lead->assigned_to === $broker->id)>{{ $broker->name }}</option>
+                            <option value="">Choose a processor</option>
+                            @foreach ($this->processors as $processor)
+                                <option value="{{ $processor->id }}" @disabled($lead->assigned_to === $processor->id)>{{ $processor->name }}</option>
                             @endforeach
                         </select>
                         <button type="submit" class="button-quiet shrink-0">Assign</button>
@@ -212,7 +212,7 @@
                         <button type="submit" class="button w-full" wire:loading.attr="disabled" wire:target="logAction">Save</button>
                     </form>
                 </x-card>
-            @elseif ($lead->broker === null)
+            @elseif ($lead->processor === null)
                 <p class="rounded-xl border border-dashed border-stone-300 px-5 py-4 text-sm text-stone-600">
                     Take this lead to log calls and schedule a call-back.
                 </p>

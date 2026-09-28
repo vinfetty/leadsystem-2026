@@ -11,18 +11,18 @@ use Tests\TestCase;
 
 class LeadPolicyTest extends TestCase
 {
-    private const BROKER = 1;
+    private const PROCESSOR = 1;
 
     private const COLLEAGUE = 2;
 
     #[TestWith([null, true])]
-    #[TestWith([self::BROKER, true])]
+    #[TestWith([self::PROCESSOR, true])]
     #[TestWith([self::COLLEAGUE, false])]
-    public function test_broker_may_view_own_and_unassigned_leads_only(?int $assignedTo, bool $allowed): void
+    public function test_processor_may_view_own_and_unassigned_leads_only(?int $assignedTo, bool $allowed): void
     {
         $lead = $this->lead($assignedTo);
 
-        $this->assertSame($allowed, (new LeadPolicy)->view($this->broker(), $lead));
+        $this->assertSame($allowed, (new LeadPolicy)->view($this->processor(), $lead));
     }
 
     public function test_admin_may_view_a_lead_assigned_to_anyone(): void
@@ -32,14 +32,14 @@ class LeadPolicyTest extends TestCase
         $this->assertTrue((new LeadPolicy)->view($this->admin(), $lead));
     }
 
-    #[TestWith([self::BROKER, true])]
+    #[TestWith([self::PROCESSOR, true])]
     #[TestWith([null, false])]
     #[TestWith([self::COLLEAGUE, false])]
-    public function test_broker_may_work_only_a_lead_assigned_to_them(?int $assignedTo, bool $allowed): void
+    public function test_processor_may_work_only_a_lead_assigned_to_them(?int $assignedTo, bool $allowed): void
     {
         $lead = $this->lead($assignedTo);
 
-        $this->assertSame($allowed, (new LeadPolicy)->update($this->broker(), $lead));
+        $this->assertSame($allowed, (new LeadPolicy)->update($this->processor(), $lead));
     }
 
     public function test_admin_may_work_any_lead(): void
@@ -54,25 +54,25 @@ class LeadPolicyTest extends TestCase
         $lead = $this->lead(null);
 
         $this->assertTrue((new LeadPolicy)->assign($this->admin(), $lead));
-        $this->assertFalse((new LeadPolicy)->assign($this->broker(), $lead));
+        $this->assertFalse((new LeadPolicy)->assign($this->processor(), $lead));
     }
 
     #[TestWith([LeadStatus::New, null, true])]
     #[TestWith([LeadStatus::Contacted, null, true])]
     #[TestWith([LeadStatus::New, self::COLLEAGUE, false])]
-    #[TestWith([LeadStatus::New, self::BROKER, false])]
+    #[TestWith([LeadStatus::New, self::PROCESSOR, false])]
     #[TestWith([LeadStatus::Closed, null, false])]
     #[TestWith([LeadStatus::Dead, null, false])]
     public function test_a_lead_may_be_taken_only_while_open_and_unassigned(LeadStatus $status, ?int $assignedTo, bool $allowed): void
     {
         $lead = $this->lead($assignedTo, $status);
 
-        $this->assertSame($allowed, (new LeadPolicy)->claim($this->broker(), $lead));
+        $this->assertSame($allowed, (new LeadPolicy)->claim($this->processor(), $lead));
     }
 
-    private function broker(): User
+    private function processor(): User
     {
-        return User::factory()->make(['id' => self::BROKER]);
+        return User::factory()->make(['id' => self::PROCESSOR]);
     }
 
     private function admin(): User

@@ -47,8 +47,8 @@
                     <dd class="font-medium text-stone-900">admin@example.com</dd>
                 </div>
                 <div class="flex justify-between gap-4">
-                    <dt>Broker</dt>
-                    <dd class="font-medium text-stone-900">broker@example.com</dd>
+                    <dt>Processor</dt>
+                    <dd class="font-medium text-stone-900">processor@example.com</dd>
                 </div>
                 <div class="flex justify-between gap-4">
                     <dt>Password for both</dt>

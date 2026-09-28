@@ -23,45 +23,45 @@ class LeadInboxTest extends TestCase
         $this->get(route('leads.index'))->assertRedirect(route('login'));
     }
 
-    public function test_signed_in_broker_gets_the_inbox_page(): void
+    public function test_signed_in_processor_gets_the_inbox_page(): void
     {
-        $broker = User::factory()->create();
+        $processor = User::factory()->create();
 
-        $response = $this->actingAs($broker)->get(route('leads.index'));
+        $response = $this->actingAs($processor)->get(route('leads.index'));
 
         $response->assertSeeLivewire(LeadInbox::class);
     }
 
-    public function test_broker_sees_own_and_unassigned_leads_but_not_a_colleagues(): void
+    public function test_processor_sees_own_and_unassigned_leads_but_not_a_colleagues(): void
     {
-        $broker = User::factory()->create();
-        $this->leadNamed('Ownlead')->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $this->leadNamed('Ownlead')->assignedTo($processor)->create();
         $this->leadNamed('Poollead')->create();
         $this->leadNamed('Colleaguelead')->assignedTo(User::factory()->create())->create();
 
-        $inbox = Livewire::actingAs($broker)->test(LeadInbox::class);
+        $inbox = Livewire::actingAs($processor)->test(LeadInbox::class);
 
         $inbox->assertSee(['Ownlead', 'Poollead'])->assertDontSee('Colleaguelead');
     }
 
-    public function test_broker_cannot_reach_a_colleagues_lead_by_searching_for_it(): void
+    public function test_processor_cannot_reach_a_colleagues_lead_by_searching_for_it(): void
     {
-        $broker = User::factory()->create();
+        $processor = User::factory()->create();
         $this->leadNamed('Colleaguelead')->assignedTo(User::factory()->create())->create();
 
-        $inbox = Livewire::actingAs($broker)->test(LeadInbox::class)->set('search', 'Colleaguelead');
+        $inbox = Livewire::actingAs($processor)->test(LeadInbox::class)->set('search', 'Colleaguelead');
 
         $inbox->assertDontSee('Colleaguelead')->assertSee('No leads match these filters.');
     }
 
-    public function test_admin_sees_every_brokers_leads(): void
+    public function test_admin_sees_every_processors_leads(): void
     {
-        $this->leadNamed('Firstbroker')->assignedTo(User::factory()->create())->create();
-        $this->leadNamed('Secondbroker')->assignedTo(User::factory()->create())->create();
+        $this->leadNamed('Firstprocessor')->assignedTo(User::factory()->create())->create();
+        $this->leadNamed('Secondprocessor')->assignedTo(User::factory()->create())->create();
 
         $inbox = Livewire::actingAs(User::factory()->admin()->create())->test(LeadInbox::class);
 
-        $inbox->assertSee(['Firstbroker', 'Secondbroker']);
+        $inbox->assertSee(['Firstprocessor', 'Secondprocessor']);
     }
 
     public function test_lists_the_newest_lead_first(): void
@@ -117,13 +117,13 @@ class LeadInboxTest extends TestCase
         $inbox->assertSee('Texan')->assertDontSee('Ohioan');
     }
 
-    public function test_filters_to_the_brokers_own_leads_or_the_unassigned_pool(): void
+    public function test_filters_to_the_processors_own_leads_or_the_unassigned_pool(): void
     {
-        $broker = User::factory()->create();
-        $this->leadNamed('Ownlead')->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $this->leadNamed('Ownlead')->assignedTo($processor)->create();
         $this->leadNamed('Poollead')->create();
 
-        $inbox = Livewire::actingAs($broker)->test(LeadInbox::class);
+        $inbox = Livewire::actingAs($processor)->test(LeadInbox::class);
 
         $inbox->set('owner', 'mine')->assertSee('Ownlead')->assertDontSee('Poollead');
         $inbox->set('owner', 'unassigned')->assertSee('Poollead')->assertDontSee('Ownlead');
@@ -168,15 +168,15 @@ class LeadInboxTest extends TestCase
         $inbox->assertSee('&lt;script&gt;', escape: false)->assertDontSee('<script>alert("x")</script>', escape: false);
     }
 
-    public function test_counts_only_the_open_leads_the_broker_may_see(): void
+    public function test_counts_only_the_open_leads_the_processor_may_see(): void
     {
-        $broker = User::factory()->create();
-        Lead::factory()->count(2)->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        Lead::factory()->count(2)->assignedTo($processor)->create();
         Lead::factory()->count(3)->create();
-        Lead::factory()->assignedTo($broker)->withStatus(LeadStatus::Closed)->create();
+        Lead::factory()->assignedTo($processor)->withStatus(LeadStatus::Closed)->create();
         Lead::factory()->assignedTo(User::factory()->create())->create();
 
-        $inbox = Livewire::actingAs($broker)->test(LeadInbox::class);
+        $inbox = Livewire::actingAs($processor)->test(LeadInbox::class);
 
         $this->assertSame(['unassigned' => 3, 'mine' => 2, 'due' => 0, 'open' => 5], $inbox->instance()->summary);
     }
@@ -184,13 +184,13 @@ class LeadInboxTest extends TestCase
     public function test_call_backs_due_view_lists_only_leads_whose_time_has_arrived_soonest_first(): void
     {
         $this->travelTo('2026-03-10 15:00:00');
-        $broker = User::factory()->create();
-        $this->leadNamed('Duetoday')->assignedTo($broker)->callbackAt(CarbonImmutable::parse('2026-03-10 14:00'))->create();
-        $this->leadNamed('Dueyesterday')->assignedTo($broker)->callbackAt(CarbonImmutable::parse('2026-03-09 14:00'))->create();
-        $this->leadNamed('Duetomorrow')->assignedTo($broker)->callbackAt(CarbonImmutable::parse('2026-03-11 14:00'))->create();
-        $this->leadNamed('Nocallback')->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $this->leadNamed('Duetoday')->assignedTo($processor)->callbackAt(CarbonImmutable::parse('2026-03-10 14:00'))->create();
+        $this->leadNamed('Dueyesterday')->assignedTo($processor)->callbackAt(CarbonImmutable::parse('2026-03-09 14:00'))->create();
+        $this->leadNamed('Duetomorrow')->assignedTo($processor)->callbackAt(CarbonImmutable::parse('2026-03-11 14:00'))->create();
+        $this->leadNamed('Nocallback')->assignedTo($processor)->create();
 
-        $inbox = Livewire::actingAs($broker)->test(LeadInbox::class)->call('show', 'due');
+        $inbox = Livewire::actingAs($processor)->test(LeadInbox::class)->call('show', 'due');
 
         $inbox->assertSet('due', true)
             ->assertSeeInOrder(['Dueyesterday', 'Duetoday'])
@@ -201,13 +201,13 @@ class LeadInboxTest extends TestCase
     public function test_a_closed_lead_is_never_due(): void
     {
         $this->travelTo('2026-03-10 15:00:00');
-        $broker = User::factory()->create();
-        $this->leadNamed('Closedlead')->assignedTo($broker)
+        $processor = User::factory()->create();
+        $this->leadNamed('Closedlead')->assignedTo($processor)
             ->callbackAt(CarbonImmutable::parse('2026-03-10 14:00'))
             ->withStatus(LeadStatus::Closed)
             ->create();
 
-        $inbox = Livewire::actingAs($broker)->test(LeadInbox::class)->set('status', 'all')->set('due', true);
+        $inbox = Livewire::actingAs($processor)->test(LeadInbox::class)->set('status', 'all')->set('due', true);
 
         $inbox->assertDontSee('Closedlead');
     }
@@ -253,23 +253,23 @@ class LeadInboxTest extends TestCase
         $inbox->call('togglePage')->assertSet('selected', []);
     }
 
-    public function test_broker_takes_an_unassigned_lead(): void
+    public function test_processor_takes_an_unassigned_lead(): void
     {
-        $broker = User::factory()->create();
+        $processor = User::factory()->create();
         $lead = $this->leadNamed('Poollead')->create();
 
-        $inbox = Livewire::actingAs($broker)->test(LeadInbox::class)->call('claim', $lead->id);
+        $inbox = Livewire::actingAs($processor)->test(LeadInbox::class)->call('claim', $lead->id);
 
         $inbox->assertSee('Poollead is now yours.');
         $this->assertDatabaseHas('leads', [
-            'id' => $lead->id, 'assigned_to' => $broker->id, 'status' => LeadStatus::Assigned->value,
+            'id' => $lead->id, 'assigned_to' => $processor->id, 'status' => LeadStatus::Assigned->value,
         ]);
         $this->assertDatabaseHas('lead_actions', [
-            'lead_id' => $lead->id, 'user_id' => $broker->id, 'type' => 'assigned',
+            'lead_id' => $lead->id, 'user_id' => $processor->id, 'type' => 'assigned',
         ]);
     }
 
-    public function test_broker_cannot_take_a_lead_that_a_colleague_already_has(): void
+    public function test_processor_cannot_take_a_lead_that_a_colleague_already_has(): void
     {
         $colleague = User::factory()->create();
         $lead = Lead::factory()->assignedTo($colleague)->create();
@@ -281,33 +281,33 @@ class LeadInboxTest extends TestCase
         $this->assertDatabaseCount('lead_actions', 0);
     }
 
-    public function test_admin_assigns_the_selected_leads_to_a_broker(): void
+    public function test_admin_assigns_the_selected_leads_to_a_processor(): void
     {
         $admin = User::factory()->admin()->create();
-        $broker = User::factory()->create(['name' => 'Robin Vale']);
+        $processor = User::factory()->create(['name' => 'Robin Vale']);
         $leads = Lead::factory()->count(2)->create();
         $untouched = Lead::factory()->create();
 
         $inbox = Livewire::actingAs($admin)
             ->test(LeadInbox::class)
             ->set('selected', $leads->modelKeys())
-            ->set('assignTo', $broker->id)
+            ->set('assignTo', $processor->id)
             ->call('assignSelected');
 
         $inbox->assertSee('2 leads assigned to Robin Vale.')->assertSet('selected', [])->assertSet('assignTo', null);
-        $this->assertSame(2, $broker->leads()->where('status', LeadStatus::Assigned)->count());
+        $this->assertSame(2, $processor->leads()->where('status', LeadStatus::Assigned)->count());
         $this->assertNull($untouched->refresh()->assigned_to);
         $this->assertDatabaseHas('lead_actions', [
             'lead_id' => $leads->first()->id, 'user_id' => $admin->id, 'type' => 'assigned', 'note' => 'Assigned to Robin Vale',
         ]);
     }
 
-    public function test_broker_is_forbidden_from_assigning_leads_to_someone(): void
+    public function test_processor_is_forbidden_from_assigning_leads_to_someone(): void
     {
-        $broker = User::factory()->create();
+        $processor = User::factory()->create();
         $lead = Lead::factory()->create();
 
-        $inbox = Livewire::actingAs($broker)
+        $inbox = Livewire::actingAs($processor)
             ->test(LeadInbox::class)
             ->set('selected', [$lead->id])
             ->set('assignTo', User::factory()->create()->id)
@@ -317,7 +317,7 @@ class LeadInboxTest extends TestCase
         $this->assertNull($lead->refresh()->assigned_to);
     }
 
-    public function test_assigning_requires_a_broker_to_be_chosen(): void
+    public function test_assigning_requires_a_processor_to_be_chosen(): void
     {
         $lead = Lead::factory()->create();
 
@@ -332,11 +332,11 @@ class LeadInboxTest extends TestCase
 
     public function test_assigning_requires_a_selection(): void
     {
-        $broker = User::factory()->create();
+        $processor = User::factory()->create();
 
         $inbox = Livewire::actingAs(User::factory()->admin()->create())
             ->test(LeadInbox::class)
-            ->set('assignTo', $broker->id)
+            ->set('assignTo', $processor->id)
             ->call('assignSelected');
 
         $inbox->assertHasErrors(['selected' => 'required']);

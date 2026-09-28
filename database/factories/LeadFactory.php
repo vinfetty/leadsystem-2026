@@ -53,9 +53,9 @@ class LeadFactory extends Factory
         return $this->state(['state' => $state, 'timezone' => StateTimeZone::for($state)]);
     }
 
-    public function assignedTo(User $broker): static
+    public function assignedTo(User $processor): static
     {
-        return $this->state(['assigned_to' => $broker->id, 'status' => LeadStatus::Assigned]);
+        return $this->state(['assigned_to' => $processor->id, 'status' => LeadStatus::Assigned]);
     }
 
     public function withStatus(LeadStatus $status): static

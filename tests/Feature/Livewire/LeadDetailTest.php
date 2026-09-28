@@ -28,14 +28,14 @@ class LeadDetailTest extends TestCase
         $this->get(route('leads.show', $lead))->assertRedirect(route('login'));
     }
 
-    public function test_broker_opens_their_own_lead(): void
+    public function test_processor_opens_their_own_lead(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->create([
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->create([
             'first_name' => 'Dana', 'last_name' => 'Whitlock', 'phone' => '6145550142',
         ]);
 
-        $response = $this->actingAs($broker)->get(route('leads.show', $lead));
+        $response = $this->actingAs($processor)->get(route('leads.show', $lead));
 
         $response->assertSeeLivewire(LeadDetail::class)->assertSee(['Dana Whitlock', '(614) 555-0142']);
     }
@@ -51,9 +51,9 @@ class LeadDetailTest extends TestCase
 
     public function test_returns_to_the_inbox_without_acting_once_the_lead_is_handed_to_a_colleague(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->create();
-        $page = Livewire::actingAs($broker)->test(LeadDetail::class, ['lead' => $lead]);
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->create();
+        $page = Livewire::actingAs($processor)->test(LeadDetail::class, ['lead' => $lead]);
         $lead->update(['assigned_to' => User::factory()->create()->id]);
 
         $page->call('logAction');
@@ -75,33 +75,33 @@ class LeadDetailTest extends TestCase
 
     public function test_shows_the_history_newest_first(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->create();
         LeadAction::factory()->for($lead)->create(['note' => 'First call', 'created_at' => now()->subDay()]);
         LeadAction::factory()->for($lead)->create(['note' => 'Second call', 'created_at' => now()]);
 
-        $page = Livewire::actingAs($broker)->test(LeadDetail::class, ['lead' => $lead]);
+        $page = Livewire::actingAs($processor)->test(LeadDetail::class, ['lead' => $lead]);
 
         $page->assertSeeInOrder(['Second call', 'First call']);
     }
 
     public function test_escapes_notes_in_the_history(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->create();
         LeadAction::factory()->for($lead)->create(['note' => '<script>alert("x")</script>']);
 
-        $page = Livewire::actingAs($broker)->test(LeadDetail::class, ['lead' => $lead]);
+        $page = Livewire::actingAs($processor)->test(LeadDetail::class, ['lead' => $lead]);
 
         $page->assertSee('&lt;script&gt;', escape: false)->assertDontSee('<script>alert("x")</script>', escape: false);
     }
 
     public function test_logging_a_call_marks_the_lead_contacted_and_adds_it_to_the_history(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->create();
 
-        $page = Livewire::actingAs($broker)
+        $page = Livewire::actingAs($processor)
             ->test(LeadDetail::class, ['lead' => $lead])
             ->set('actionType', 'called')
             ->set('note', 'Wants a quote by Friday.')
@@ -110,16 +110,16 @@ class LeadDetailTest extends TestCase
         $page->assertHasNoErrors()->assertSet('note', '')->assertSee(['Saved to the history.', 'Wants a quote by Friday.']);
         $this->assertSame(LeadStatus::Contacted, $lead->refresh()->status);
         $this->assertDatabaseHas('lead_actions', [
-            'lead_id' => $lead->id, 'user_id' => $broker->id, 'type' => 'called', 'note' => 'Wants a quote by Friday.',
+            'lead_id' => $lead->id, 'user_id' => $processor->id, 'type' => 'called', 'note' => 'Wants a quote by Friday.',
         ]);
     }
 
     public function test_marking_a_lead_dead_requires_a_note(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->create();
 
-        $page = Livewire::actingAs($broker)
+        $page = Livewire::actingAs($processor)
             ->test(LeadDetail::class, ['lead' => $lead])
             ->set('actionType', 'dead')
             ->call('logAction');
@@ -131,10 +131,10 @@ class LeadDetailTest extends TestCase
 
     public function test_rejects_an_action_the_form_does_not_offer(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->create();
 
-        $page = Livewire::actingAs($broker)
+        $page = Livewire::actingAs($processor)
             ->test(LeadDetail::class, ['lead' => $lead])
             ->set('actionType', 'assigned')
             ->set('note', 'Forged.')
@@ -144,12 +144,12 @@ class LeadDetailTest extends TestCase
         $this->assertDatabaseCount('lead_actions', 0);
     }
 
-    public function test_reopening_a_dead_lead_returns_it_to_the_broker(): void
+    public function test_reopening_a_dead_lead_returns_it_to_the_processor(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->withStatus(LeadStatus::Dead)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->withStatus(LeadStatus::Dead)->create();
 
-        $page = Livewire::actingAs($broker)
+        $page = Livewire::actingAs($processor)
             ->test(LeadDetail::class, ['lead' => $lead])
             ->set('actionType', 'reopened')
             ->call('logAction');
@@ -158,7 +158,7 @@ class LeadDetailTest extends TestCase
         $this->assertSame(LeadStatus::Assigned, $lead->refresh()->status);
     }
 
-    public function test_broker_is_forbidden_from_working_a_lead_they_have_not_taken(): void
+    public function test_processor_is_forbidden_from_working_a_lead_they_have_not_taken(): void
     {
         $lead = Lead::factory()->create();
 
@@ -175,10 +175,10 @@ class LeadDetailTest extends TestCase
     public function test_scheduling_reads_the_time_as_the_leads_local_time(): void
     {
         $this->travelTo(self::NOW_UTC);
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->inState('NY')->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->inState('NY')->assignedTo($processor)->create();
 
-        $page = Livewire::actingAs($broker)
+        $page = Livewire::actingAs($processor)
             ->test(LeadDetail::class, ['lead' => $lead])
             ->set('callbackAt', '2026-03-11T14:30')
             ->call('scheduleCallback');
@@ -192,10 +192,10 @@ class LeadDetailTest extends TestCase
     public function test_scheduling_outside_calling_hours_shows_an_error_and_changes_nothing(): void
     {
         $this->travelTo(self::NOW_UTC);
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->inState('NY')->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->inState('NY')->assignedTo($processor)->create();
 
-        $page = Livewire::actingAs($broker)
+        $page = Livewire::actingAs($processor)
             ->test(LeadDetail::class, ['lead' => $lead])
             ->set('callbackAt', '2026-03-11T22:15')
             ->call('scheduleCallback');
@@ -207,10 +207,10 @@ class LeadDetailTest extends TestCase
 
     public function test_scheduling_requires_a_time(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->create();
 
-        $page = Livewire::actingAs($broker)->test(LeadDetail::class, ['lead' => $lead])->call('scheduleCallback');
+        $page = Livewire::actingAs($processor)->test(LeadDetail::class, ['lead' => $lead])->call('scheduleCallback');
 
         $page->assertHasErrors(['callbackAt' => 'required'])->assertSee('Choose a date and time.');
     }
@@ -218,10 +218,10 @@ class LeadDetailTest extends TestCase
     public function test_scheduling_is_refused_on_a_closed_lead(): void
     {
         $this->travelTo(self::NOW_UTC);
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->withStatus(LeadStatus::Closed)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->withStatus(LeadStatus::Closed)->create();
 
-        $page = Livewire::actingAs($broker)
+        $page = Livewire::actingAs($processor)
             ->test(LeadDetail::class, ['lead' => $lead])
             ->set('callbackAt', '2026-03-11T14:30')
             ->call('scheduleCallback');
@@ -232,7 +232,7 @@ class LeadDetailTest extends TestCase
         $this->assertNull($lead->follow_up_at);
     }
 
-    public function test_broker_is_forbidden_from_scheduling_on_a_lead_they_have_not_taken(): void
+    public function test_processor_is_forbidden_from_scheduling_on_a_lead_they_have_not_taken(): void
     {
         $this->travelTo(self::NOW_UTC);
         $lead = Lead::factory()->create();
@@ -249,28 +249,28 @@ class LeadDetailTest extends TestCase
     public function test_shows_an_overdue_call_back_as_due(): void
     {
         $this->travelTo(self::NOW_UTC);
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->inState('NY')->assignedTo($broker)
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->inState('NY')->assignedTo($processor)
             ->callbackAt(CarbonImmutable::parse('2026-03-10 13:00', 'UTC'))
             ->create();
 
-        $page = Livewire::actingAs($broker)->test(LeadDetail::class, ['lead' => $lead]);
+        $page = Livewire::actingAs($processor)->test(LeadDetail::class, ['lead' => $lead]);
 
         $page->assertSee(['Tue 10 Mar, 9:00 am EDT', 'due 2 hours ago']);
     }
 
-    public function test_broker_takes_an_unassigned_lead_from_its_page(): void
+    public function test_processor_takes_an_unassigned_lead_from_its_page(): void
     {
-        $broker = User::factory()->create();
+        $processor = User::factory()->create();
         $lead = Lead::factory()->create();
 
-        $page = Livewire::actingAs($broker)->test(LeadDetail::class, ['lead' => $lead])->call('claim');
+        $page = Livewire::actingAs($processor)->test(LeadDetail::class, ['lead' => $lead])->call('claim');
 
         $page->assertSee('This lead is now yours.');
-        $this->assertSame($broker->id, $lead->refresh()->assigned_to);
+        $this->assertSame($processor->id, $lead->refresh()->assigned_to);
     }
 
-    public function test_broker_who_loses_the_lead_to_a_colleague_returns_to_the_inbox(): void
+    public function test_processor_who_loses_the_lead_to_a_colleague_returns_to_the_inbox(): void
     {
         $lead = Lead::factory()->create();
         $page = Livewire::actingAs(User::factory()->create())->test(LeadDetail::class, ['lead' => $lead]);
@@ -294,32 +294,32 @@ class LeadDetailTest extends TestCase
         $this->assertNull($lead->refresh()->assigned_to);
     }
 
-    public function test_admin_assigns_the_lead_to_a_broker(): void
+    public function test_admin_assigns_the_lead_to_a_processor(): void
     {
         $admin = User::factory()->admin()->create();
-        $broker = User::factory()->create(['name' => 'Robin Vale']);
+        $processor = User::factory()->create(['name' => 'Robin Vale']);
         $lead = Lead::factory()->create();
 
         $page = Livewire::actingAs($admin)
             ->test(LeadDetail::class, ['lead' => $lead])
-            ->set('assignTo', $broker->id)
+            ->set('assignTo', $processor->id)
             ->call('assign');
 
         $page->assertSee('Assigned to Robin Vale.')->assertSet('assignTo', null);
-        $this->assertSame($broker->id, $lead->refresh()->assigned_to);
+        $this->assertSame($processor->id, $lead->refresh()->assigned_to);
     }
 
-    public function test_broker_is_forbidden_from_assigning_the_lead_to_someone(): void
+    public function test_processor_is_forbidden_from_assigning_the_lead_to_someone(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->create();
 
-        $page = Livewire::actingAs($broker)
+        $page = Livewire::actingAs($processor)
             ->test(LeadDetail::class, ['lead' => $lead])
             ->set('assignTo', User::factory()->create()->id)
             ->call('assign');
 
         $page->assertForbidden();
-        $this->assertSame($broker->id, $lead->refresh()->assigned_to);
+        $this->assertSame($processor->id, $lead->refresh()->assigned_to);
     }
 }

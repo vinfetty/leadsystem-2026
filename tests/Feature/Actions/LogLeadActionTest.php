@@ -19,14 +19,14 @@ class LogLeadActionTest extends TestCase
 
     public function test_records_the_action_with_who_did_it_and_the_trimmed_note(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->create();
 
-        (new LogLeadAction)->handle($lead, $broker, LeadActionType::LeftMessage, "  Voicemail, will try again.\n");
+        (new LogLeadAction)->handle($lead, $processor, LeadActionType::LeftMessage, "  Voicemail, will try again.\n");
 
         $this->assertDatabaseHas('lead_actions', [
             'lead_id' => $lead->id,
-            'user_id' => $broker->id,
+            'user_id' => $processor->id,
             'type' => 'left_message',
             'note' => 'Voicemail, will try again.',
         ]);
@@ -34,10 +34,10 @@ class LogLeadActionTest extends TestCase
 
     public function test_stores_no_note_when_the_note_is_blank(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->create();
 
-        $action = (new LogLeadAction)->handle($lead, $broker, LeadActionType::Called, '   ');
+        $action = (new LogLeadAction)->handle($lead, $processor, LeadActionType::Called, '   ');
 
         $this->assertNull($action->refresh()->note);
     }
@@ -47,10 +47,10 @@ class LogLeadActionTest extends TestCase
     #[TestWith([LeadActionType::Dead, LeadStatus::Dead])]
     public function test_moves_the_lead_on_and_settles_its_pending_call_back(LeadActionType $type, LeadStatus $expected): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->callbackAt(CarbonImmutable::parse('2026-03-11 18:30'))->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->callbackAt(CarbonImmutable::parse('2026-03-11 18:30'))->create();
 
-        (new LogLeadAction)->handle($lead, $broker, $type, 'Done.');
+        (new LogLeadAction)->handle($lead, $processor, $type, 'Done.');
 
         $lead->refresh();
         $this->assertSame($expected, $lead->status);
@@ -61,22 +61,22 @@ class LogLeadActionTest extends TestCase
     #[TestWith([LeadActionType::Note])]
     public function test_leaves_the_status_and_call_back_alone_for_a_message_or_a_note(LeadActionType $type): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->callbackAt(CarbonImmutable::parse('2026-03-11 18:30'))->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->callbackAt(CarbonImmutable::parse('2026-03-11 18:30'))->create();
 
-        (new LogLeadAction)->handle($lead, $broker, $type, 'Tried the mobile.');
+        (new LogLeadAction)->handle($lead, $processor, $type, 'Tried the mobile.');
 
         $lead->refresh();
         $this->assertSame(LeadStatus::Scheduled, $lead->status);
         $this->assertSame('2026-03-11 18:30:00', $lead->follow_up_at->toDateTimeString());
     }
 
-    public function test_reopening_returns_an_assigned_lead_to_its_broker(): void
+    public function test_reopening_returns_an_assigned_lead_to_its_processor(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->withStatus(LeadStatus::Dead)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->withStatus(LeadStatus::Dead)->create();
 
-        (new LogLeadAction)->handle($lead, $broker, LeadActionType::Reopened);
+        (new LogLeadAction)->handle($lead, $processor, LeadActionType::Reopened);
 
         $this->assertSame(LeadStatus::Assigned, $lead->refresh()->status);
     }
@@ -97,11 +97,11 @@ class LogLeadActionTest extends TestCase
     #[TestWith([LeadStatus::Assigned, LeadActionType::Scheduled])]
     public function test_refuses_an_action_that_does_not_fit_the_leads_status(LeadStatus $status, LeadActionType $type): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->withStatus($status)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->withStatus($status)->create();
 
         try {
-            (new LogLeadAction)->handle($lead, $broker, $type, 'Anything.');
+            (new LogLeadAction)->handle($lead, $processor, $type, 'Anything.');
             $this->fail('The action was accepted.');
         } catch (InvalidArgumentException) {
             $this->assertSame($status, $lead->refresh()->status);

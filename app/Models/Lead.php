@@ -59,7 +59,7 @@ class Lead extends Model
     /**
      * @return BelongsTo<User, $this>
      */
-    public function broker(): BelongsTo
+    public function processor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
@@ -81,7 +81,7 @@ class Lead extends Model
     }
 
     /**
-     * Leads this user may see: every lead for an admin, and for a broker
+     * Leads this user may see: every lead for an admin, and for a processor
      * their own leads plus the unassigned pool.
      *
      * @param  Builder<self>  $query

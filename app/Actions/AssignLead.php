@@ -9,26 +9,26 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Hand a lead to a broker and record who decided it.
+ * Hand a lead to a processor and record who decided it.
  */
 class AssignLead
 {
-    public function handle(Lead $lead, User $broker, User $assignedBy): void
+    public function handle(Lead $lead, User $processor, User $assignedBy): void
     {
-        if ($lead->assigned_to === $broker->id) {
+        if ($lead->assigned_to === $processor->id) {
             return;
         }
 
-        DB::transaction(function () use ($lead, $broker, $assignedBy): void {
+        DB::transaction(function () use ($lead, $processor, $assignedBy): void {
             $lead->update([
-                'assigned_to' => $broker->id,
+                'assigned_to' => $processor->id,
                 'status' => $lead->status === LeadStatus::New ? LeadStatus::Assigned : $lead->status,
             ]);
 
             $lead->actions()->create([
                 'user_id' => $assignedBy->id,
                 'type' => LeadActionType::Assigned,
-                'note' => 'Assigned to '.$broker->name,
+                'note' => 'Assigned to '.$processor->name,
             ]);
         });
     }

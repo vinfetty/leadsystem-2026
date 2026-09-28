@@ -16,10 +16,10 @@ class ScheduleCallbackTest extends TestCase
 
     public function test_stores_the_moment_in_utc_and_marks_the_lead_scheduled(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->inState('NY')->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->inState('NY')->assignedTo($processor)->create();
 
-        (new ScheduleCallback)->handle($lead, $broker, CarbonImmutable::parse('2026-03-11 14:30', 'America/New_York'));
+        (new ScheduleCallback)->handle($lead, $processor, CarbonImmutable::parse('2026-03-11 14:30', 'America/New_York'));
 
         $lead->refresh();
         $this->assertSame(LeadStatus::Scheduled, $lead->status);
@@ -28,14 +28,14 @@ class ScheduleCallbackTest extends TestCase
 
     public function test_logs_the_call_back_in_the_leads_own_time(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->inState('CA')->assignedTo($broker)->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->inState('CA')->assignedTo($processor)->create();
 
-        (new ScheduleCallback)->handle($lead, $broker, CarbonImmutable::parse('2026-03-11 18:30', 'UTC'));
+        (new ScheduleCallback)->handle($lead, $processor, CarbonImmutable::parse('2026-03-11 18:30', 'UTC'));
 
         $this->assertDatabaseHas('lead_actions', [
             'lead_id' => $lead->id,
-            'user_id' => $broker->id,
+            'user_id' => $processor->id,
             'type' => 'scheduled',
             'note' => 'Call back Wed 11 Mar 2026, 11:30 am PDT',
         ]);
@@ -43,10 +43,10 @@ class ScheduleCallbackTest extends TestCase
 
     public function test_rescheduling_replaces_the_earlier_time(): void
     {
-        $broker = User::factory()->create();
-        $lead = Lead::factory()->assignedTo($broker)->callbackAt(CarbonImmutable::parse('2026-03-11 18:30'))->create();
+        $processor = User::factory()->create();
+        $lead = Lead::factory()->assignedTo($processor)->callbackAt(CarbonImmutable::parse('2026-03-11 18:30'))->create();
 
-        (new ScheduleCallback)->handle($lead, $broker, CarbonImmutable::parse('2026-03-12 16:00', 'UTC'));
+        (new ScheduleCallback)->handle($lead, $processor, CarbonImmutable::parse('2026-03-12 16:00', 'UTC'));
 
         $this->assertSame('2026-03-12 16:00:00', $lead->refresh()->follow_up_at->toDateTimeString());
     }

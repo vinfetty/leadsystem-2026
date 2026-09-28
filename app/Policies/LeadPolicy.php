@@ -14,7 +14,7 @@ class LeadPolicy
     }
 
     /**
-     * A broker sees their own leads and the unassigned pool, never a colleague's.
+     * A processor sees their own leads and the unassigned pool, never a colleague's.
      */
     public function view(User $user, Lead $lead): bool
     {
@@ -30,7 +30,7 @@ class LeadPolicy
     }
 
     /**
-     * Handing a lead to a named broker, or moving it between brokers.
+     * Handing a lead to a named processor, or moving it between processors.
      */
     public function assign(User $user, Lead $lead): bool
     {

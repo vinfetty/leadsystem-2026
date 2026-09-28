@@ -34,14 +34,14 @@ $getid = $_GET['getid'];
 $query = "update $dbtable SET action = 'recycled', actiondate = '$today', actiontime = '$action_time', actionlevel = '20', lead_recycler = '$partner', x_recycleit = '$x_setlead', leadrecycled = '1' where userid = '$getid'";
 ```
 
-In 2026 a broker takes a lead through one conditional update with bound parameters. If two brokers press the button at the same moment, the database gives the lead to one of them and the other is told it has gone.
+In 2026 a processor takes a lead through one conditional update with bound parameters. If two processors press the button at the same moment, the database gives the lead to one of them and the other is told it has gone.
 
 ```php
 $claimed = Lead::query()
     ->whereKey($lead->id)
     ->whereNull('assigned_to')
     ->open()
-    ->update(['assigned_to' => $broker->id]);
+    ->update(['assigned_to' => $processor->id]);
 
 if ($claimed === 0) {
     return false;
@@ -76,12 +76,12 @@ public function isWithinCallingHours(CarbonImmutable $at): bool
 - **Refuses a lead without consent** and records when and from which IP address consent was given.
 - **Spots repeats.** The same email from the same site within 30 days returns the lead already on file.
 - **Lists leads in one inbox**, filtered by search, status, source, state and owner. The filters live in the URL.
-- **Separates roles.** An admin sees every lead and assigns them. A broker sees their own leads and the unassigned pool.
+- **Separates roles.** An admin sees every lead and assigns them. A processor sees their own leads and the unassigned pool.
 - **Keeps a history.** Calls, messages, notes, assignments and call-backs are each a row with a name and a time.
 - **Books call-backs** in the lead's local time, and refuses any outside 8 am to 9 pm for the lead.
 - **Shows what is due.** The inbox lists call-backs whose time has arrived, soonest first.
 
-![A lead's page, signed in as the broker who holds it](docs/screenshots/lead.png)
+![A lead's page, signed in as the processor who holds it](docs/screenshots/lead.png)
 
 ![Call-backs that are due](docs/screenshots/call-backs-due.png)
 
@@ -89,7 +89,7 @@ public function isWithinCallingHours(CarbonImmutable $at): bool
 
 | Decision | Where |
 |---|---|
-| Two brokers cannot both take the same lead | `app/Actions/ClaimLead.php` |
+| Two processors cannot both take the same lead | `app/Actions/ClaimLead.php` |
 | A colleague's lead answers 404, so the page does not confirm it exists | `app/Livewire/LeadDetail.php` |
 | A lead handed to a colleague while your page is open sends you back to the inbox | `app/Livewire/LeadDetail.php` |
 | Filter values from the URL are checked against known lists before they reach a query | `app/Livewire/LeadInbox.php` |
@@ -117,7 +117,7 @@ Then open `http://127.0.0.1:8000` and sign in with a demo account. Both use the 
 | Account | Sees |
 |---|---|
 | `admin@example.com` | Every lead, and can assign them |
-| `broker@example.com` | Their own leads and the unassigned pool |
+| `processor@example.com` | Their own leads and the unassigned pool |
 
 To send a lead in, use the demo token of one of the seeded sources:
 
@@ -137,7 +137,7 @@ The first call answers `201`. Sending the same lead again answers `200` with `"d
 php artisan test
 ```
 
-The 146 tests cover lead intake, the inbox filters, who may see and change which lead, the race between two brokers, call logging, and call-back times across time zones and daylight saving.
+The 146 tests cover lead intake, the inbox filters, who may see and change which lead, the race between two processors, call logging, and call-back times across time zones and daylight saving.
 
 ## How this was built
 

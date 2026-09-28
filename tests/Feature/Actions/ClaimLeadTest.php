@@ -14,19 +14,19 @@ class ClaimLeadTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_gives_an_unassigned_new_lead_to_the_broker_and_logs_it(): void
+    public function test_gives_an_unassigned_new_lead_to_the_processor_and_logs_it(): void
     {
-        $broker = User::factory()->create(['name' => 'Robin Vale']);
+        $processor = User::factory()->create(['name' => 'Robin Vale']);
         $lead = Lead::factory()->create();
 
-        $claimed = (new ClaimLead)->handle($lead, $broker);
+        $claimed = (new ClaimLead)->handle($lead, $processor);
 
         $this->assertTrue($claimed);
         $this->assertDatabaseHas('leads', [
-            'id' => $lead->id, 'assigned_to' => $broker->id, 'status' => LeadStatus::Assigned->value,
+            'id' => $lead->id, 'assigned_to' => $processor->id, 'status' => LeadStatus::Assigned->value,
         ]);
         $this->assertDatabaseHas('lead_actions', [
-            'lead_id' => $lead->id, 'user_id' => $broker->id, 'type' => 'assigned', 'note' => 'Taken by Robin Vale',
+            'lead_id' => $lead->id, 'user_id' => $processor->id, 'type' => 'assigned', 'note' => 'Taken by Robin Vale',
         ]);
     }
 
@@ -39,7 +39,7 @@ class ClaimLeadTest extends TestCase
         $this->assertSame(LeadStatus::Contacted, $lead->refresh()->status);
     }
 
-    public function test_second_broker_loses_when_both_loaded_the_lead_while_it_was_unassigned(): void
+    public function test_second_processor_loses_when_both_loaded_the_lead_while_it_was_unassigned(): void
     {
         $first = User::factory()->create();
         $second = User::factory()->create();

@@ -143,10 +143,10 @@ class LeadDetail extends Component
             ['assignTo.required' => 'Choose who to assign the lead to.'],
         );
 
-        $broker = User::query()->findOrFail($this->assignTo);
-        $assignLead->handle($this->lead, $broker, Auth::user());
+        $processor = User::query()->findOrFail($this->assignTo);
+        $assignLead->handle($this->lead, $processor, Auth::user());
 
-        $this->notice = 'Assigned to '.$broker->name.'.';
+        $this->notice = 'Assigned to '.$processor->name.'.';
         $this->reset('assignTo');
     }
 
@@ -154,9 +154,9 @@ class LeadDetail extends Component
      * @return Collection<int, User>
      */
     #[Computed]
-    public function brokers(): Collection
+    public function processors(): Collection
     {
-        return User::query()->brokers()->orderBy('name')->get(['id', 'name']);
+        return User::query()->processors()->orderBy('name')->get(['id', 'name']);
     }
 
     /**
@@ -169,7 +169,7 @@ class LeadDetail extends Component
 
     public function render(): View
     {
-        $this->lead->refresh()->load(['source', 'broker', 'actions.user']);
+        $this->lead->refresh()->load(['source', 'processor', 'actions.user']);
 
         return view('livewire.lead-detail', [
             'loggable' => $this->loggableTypes(),

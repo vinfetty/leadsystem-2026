@@ -21,7 +21,7 @@ class LeadSeeder extends Seeder
 
     public function run(): void
     {
-        $brokers = User::query()->brokers()->get();
+        $processors = User::query()->processors()->get();
 
         $sources = collect([
             ['name' => 'Home Loan Finder', 'code' => 'S101', 'website' => 'homeloanfinder.example'],
@@ -36,19 +36,19 @@ class LeadSeeder extends Seeder
                 ->receivedWithinDays(4)
                 ->create();
 
-            foreach ($brokers as $broker) {
+            foreach ($processors as $processor) {
                 Lead::factory()
                     ->count(4)
                     ->recycle($source)
-                    ->assignedTo($broker)
-                    ->has(LeadAction::factory()->count(2)->state(['user_id' => $broker->id]), 'actions')
+                    ->assignedTo($processor)
+                    ->has(LeadAction::factory()->count(2)->state(['user_id' => $processor->id]), 'actions')
                     ->receivedWithinDays(4)
                     ->create();
 
                 Lead::factory()
                     ->count(2)
                     ->recycle($source)
-                    ->assignedTo($broker)
+                    ->assignedTo($processor)
                     ->callbackWithinDays(-1, 5)
                     ->receivedWithinDays(4)
                     ->create();

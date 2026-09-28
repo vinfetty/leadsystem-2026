@@ -138,10 +138,10 @@ class LeadInbox extends Component
         $leads = Lead::query()->whereKey($this->selected)->get();
         $leads->each(fn (Lead $lead) => $this->authorize('assign', $lead));
 
-        $broker = User::query()->findOrFail($this->assignTo);
-        $leads->each(fn (Lead $lead) => $assignLead->handle($lead, $broker, Auth::user()));
+        $processor = User::query()->findOrFail($this->assignTo);
+        $leads->each(fn (Lead $lead) => $assignLead->handle($lead, $processor, Auth::user()));
 
-        $this->notice = trans_choice('{1} 1 lead assigned to :name.|[2,*] :count leads assigned to :name.', $leads->count(), ['name' => $broker->name]);
+        $this->notice = trans_choice('{1} 1 lead assigned to :name.|[2,*] :count leads assigned to :name.', $leads->count(), ['name' => $processor->name]);
         $this->reset('selected', 'assignTo');
 
         unset($this->leads, $this->summary);
@@ -154,7 +154,7 @@ class LeadInbox extends Component
     public function leads(): LengthAwarePaginator
     {
         return $this->filteredLeads()
-            ->with(['source', 'broker'])
+            ->with(['source', 'processor'])
             ->when($this->due, fn (Builder $query) => $query->oldest('follow_up_at'))
             ->latest()
             ->latest('id')
@@ -181,9 +181,9 @@ class LeadInbox extends Component
      * @return Collection<int, User>
      */
     #[Computed]
-    public function brokers(): Collection
+    public function processors(): Collection
     {
-        return User::query()->brokers()->orderBy('name')->get(['id', 'name']);
+        return User::query()->processors()->orderBy('name')->get(['id', 'name']);
     }
 
     /**

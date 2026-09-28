@@ -78,7 +78,7 @@
         <div>
             <label for="owner" class="sr-only">Assigned to</label>
             <select wire:model.live="owner" id="owner" class="field">
-                <option value="all">{{ $isAdmin ? 'Any broker' : 'Mine and unassigned' }}</option>
+                <option value="all">{{ $isAdmin ? 'Any processor' : 'Mine and unassigned' }}</option>
                 <option value="mine">Assigned to me</option>
                 <option value="unassigned">Unassigned</option>
             </select>
@@ -96,9 +96,9 @@
             <div class="ml-auto flex flex-wrap items-center gap-2">
                 <label for="assignTo" class="text-sm text-brand-800">Assign to</label>
                 <select wire:model="assignTo" id="assignTo" class="field w-auto">
-                    <option value="">Choose a broker</option>
-                    @foreach ($this->brokers as $broker)
-                        <option value="{{ $broker->id }}">{{ $broker->name }}</option>
+                    <option value="">Choose a processor</option>
+                    @foreach ($this->processors as $processor)
+                        <option value="{{ $processor->id }}">{{ $processor->name }}</option>
                     @endforeach
                 </select>
                 <button type="submit" class="button">Assign</button>
@@ -128,7 +128,7 @@
                         <th scope="col" class="hidden px-3 py-3 md:table-cell lg:w-56">Loan</th>
                         <th scope="col" class="hidden px-3 py-3 xl:table-cell xl:w-40">Source</th>
                         <th scope="col" class="hidden px-3 py-3 sm:table-cell lg:w-32">Status</th>
-                        <th scope="col" class="px-3 py-3 lg:w-40">Broker</th>
+                        <th scope="col" class="px-3 py-3 lg:w-40">Processor</th>
                         <th scope="col" class="hidden px-3 py-3 xl:table-cell xl:w-32">Received</th>
                     </tr>
                 </thead>
@@ -183,9 +183,9 @@
                             </td>
 
                             <td class="px-3 py-3">
-                                @if ($lead->broker)
-                                    <p class="max-w-24 truncate text-stone-900 sm:max-w-40 lg:max-w-none" title="{{ $lead->broker->name }}">
-                                        {{ $lead->broker->is($user) ? 'You' : $lead->broker->name }}
+                                @if ($lead->processor)
+                                    <p class="max-w-24 truncate text-stone-900 sm:max-w-40 lg:max-w-none" title="{{ $lead->processor->name }}">
+                                        {{ $lead->processor->is($user) ? 'You' : $lead->processor->name }}
                                     </p>
                                 @else
                                     <p class="truncate text-stone-500">Unassigned</p>

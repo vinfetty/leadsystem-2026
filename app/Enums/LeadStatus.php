@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * Where a lead sits in the broker workflow.
+ * Where a lead sits in the processor workflow.
  *
  * The 2005 system tracked this as a bare integer column called
  * `actionlevel` (0, 20, 30 …) whose meaning lived in the heads of the
@@ -32,7 +32,7 @@ enum LeadStatus: string
     }
 
     /**
-     * Statuses a broker still needs to work.
+     * Statuses a processor still needs to work.
      *
      * @return array<int, self>
      */

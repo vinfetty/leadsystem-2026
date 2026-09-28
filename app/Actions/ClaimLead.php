@@ -9,23 +9,23 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Let a broker take a lead from the unassigned pool.
+ * Let a processor take a lead from the unassigned pool.
  */
 class ClaimLead
 {
     /**
-     * The lead is taken by a single conditional UPDATE, so when two brokers
+     * The lead is taken by a single conditional UPDATE, so when two processors
      * press the button at the same moment the database gives it to one of
      * them and this returns false for the other.
      */
-    public function handle(Lead $lead, User $broker): bool
+    public function handle(Lead $lead, User $processor): bool
     {
-        return DB::transaction(function () use ($lead, $broker): bool {
+        return DB::transaction(function () use ($lead, $processor): bool {
             $claimed = Lead::query()
                 ->whereKey($lead->id)
                 ->whereNull('assigned_to')
                 ->open()
-                ->update(['assigned_to' => $broker->id]);
+                ->update(['assigned_to' => $processor->id]);
 
             if ($claimed === 0) {
                 return false;
@@ -38,9 +38,9 @@ class ClaimLead
             }
 
             $lead->actions()->create([
-                'user_id' => $broker->id,
+                'user_id' => $processor->id,
                 'type' => LeadActionType::Assigned,
-                'note' => 'Taken by '.$broker->name,
+                'note' => 'Taken by '.$processor->name,
             ]);
 
             return true;
