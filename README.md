@@ -4,6 +4,8 @@ A 2026 rebuild, in Laravel and Livewire, of part of the lead system behind Direc
 
 I wrote the original in plain PHP. It captured leads from a network of websites, had a processing team verify each one by phone, matched it against every buyer's rules and routed it to the right buyer. The [case study](https://vinfetty.com/work/mortgage-lead-generation) tells that story. This repository is how I would build the same system today. It runs on invented data and is a portfolio piece, not a product.
 
+**[Try the live demo](https://leads.vinfetty.com)**. Sign in with one click as the admin or a processor. The data resets every hour.
+
 ![The lead inbox, signed in as an admin](docs/screenshots/inbox.png)
 
 ## The path of a lead
