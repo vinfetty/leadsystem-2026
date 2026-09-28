@@ -37,9 +37,24 @@
     </form>
 
     @env('local')
-        <p class="mt-4 text-center text-sm text-stone-500">
-            Demo accounts are created by <code class="text-stone-700">php artisan migrate --seed</code>
-            and listed in <code class="text-stone-700">DatabaseSeeder</code>.
-        </p>
+        <div class="mt-4 rounded-xl border border-dashed border-stone-300 px-5 py-4 text-sm text-stone-600">
+            <p class="font-medium text-stone-900">Demo accounts</p>
+            <p class="mt-0.5">Shown only while the app runs locally, after seeding.</p>
+
+            <dl class="mt-3 space-y-1">
+                <div class="flex justify-between gap-4">
+                    <dt>Admin</dt>
+                    <dd class="font-medium text-stone-900">admin@example.com</dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <dt>Broker</dt>
+                    <dd class="font-medium text-stone-900">broker@example.com</dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <dt>Password for both</dt>
+                    <dd class="font-medium text-stone-900">password</dd>
+                </div>
+            </dl>
+        </div>
     @endenv
 </div>
