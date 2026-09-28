@@ -6,7 +6,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-echo "deploy: running in $(pwd -P) on PHP $(php -r 'echo PHP_VERSION;')"
+# The folder is left out on purpose: once the repository is public, so is this log.
+echo "deploy: running on PHP $(php -r 'echo PHP_VERSION;')"
 
 fail() {
     echo "deploy: $1" >&2
