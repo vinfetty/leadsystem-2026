@@ -100,12 +100,29 @@ jobs:
           CW_USER: ${{ secrets.CW_USER }}
           CW_SSH_KEY: ${{ secrets.CW_SSH_KEY }}
 
-      - name: Unpack the release on the server
+      - name: Clear the folder before the first release
+        # A new Cloudways application arrives with a starter site in its folder. Left in place, its settings file and
+        # cached files would be picked up by this app. Whatever is there is moved to private_html, outside the web
+        # root, and kept. A marker file written after the first release means this never happens again.
         env:
           CW_APP_PATH: ${{ secrets.CW_APP_PATH }}
         run: |
           test -n "$CW_APP_PATH" || { echo "CW_APP_PATH secret is not set." >&2; exit 1; }
-          ssh cloudways "umask 002 && cd '$CW_APP_PATH' && tar -xzmf - --no-same-owner --no-same-permissions && test -f vendor/autoload.php" < release.tar.gz
+          ssh cloudways "cd '$CW_APP_PATH' && bash -s" <<'SCRIPT'
+          set -euo pipefail
+          if [ ! -f .leadsystem ]; then
+              kept="../private_html/before-leadsystem-$(date +%Y%m%d%H%M%S)"
+              mkdir -p "$kept"
+              find . -mindepth 1 -maxdepth 1 -exec mv {} "$kept"/ \;
+              echo "First release: moved what was in the folder to private_html."
+          fi
+          SCRIPT
+
+      - name: Unpack the release on the server
+        env:
+          CW_APP_PATH: ${{ secrets.CW_APP_PATH }}
+        run: |
+          ssh cloudways "umask 002 && cd '$CW_APP_PATH' && tar -xzmf - --no-same-owner --no-same-permissions && touch .leadsystem && test -f vendor/autoload.php" < release.tar.gz
 
       - name: Run deploy.sh
         env:
