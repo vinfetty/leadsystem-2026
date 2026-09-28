@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Support\Demo;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -17,8 +18,8 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        User::factory()->admin()->create(['name' => 'Demo Admin', 'email' => 'admin@example.com']);
-        User::factory()->create(['name' => 'Demo Processor', 'email' => 'processor@example.com']);
+        User::factory()->admin()->create(['name' => 'Demo Admin', 'email' => Demo::ACCOUNTS['admin']]);
+        User::factory()->create(['name' => 'Demo Processor', 'email' => Demo::ACCOUNTS['processor']]);
         User::factory()->count(2)->create();
 
         $this->call([BuyerSeeder::class, LeadSeeder::class]);

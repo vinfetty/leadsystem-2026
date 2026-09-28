@@ -10,6 +10,8 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="min-h-full bg-stone-50 font-sans text-stone-900 antialiased">
+        <x-demo-banner />
+
         <header class="border-b border-stone-200 bg-white">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
                 <div class="flex items-center gap-6">

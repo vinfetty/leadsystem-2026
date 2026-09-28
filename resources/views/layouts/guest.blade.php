@@ -9,9 +9,13 @@
         @fonts
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="grid min-h-full place-items-center bg-stone-50 px-4 py-10 font-sans text-stone-900 antialiased">
-        <main class="w-full max-w-sm">
-            {{ $slot }}
-        </main>
+    <body class="flex min-h-full flex-col bg-stone-50 font-sans text-stone-900 antialiased">
+        <x-demo-banner />
+
+        <div class="grid grow place-items-center px-4 py-10">
+            <main class="w-full max-w-sm">
+                {{ $slot }}
+            </main>
+        </div>
     </body>
 </html>

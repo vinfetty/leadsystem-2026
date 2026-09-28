@@ -5,9 +5,15 @@ use App\Livewire\BuyerDirectory;
 use App\Livewire\LeadDetail;
 use App\Livewire\LeadInbox;
 use App\Livewire\SignIn;
+use App\Support\Demo;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/leads');
+
+Route::get('/robots.txt', fn () => response(
+    "User-agent: *\nDisallow:".(Demo::enabled() ? ' /' : '')."\n",
+    headers: ['Content-Type' => 'text/plain'],
+));
 
 Route::middleware('guest')->group(function (): void {
     Route::livewire('/login', SignIn::class)->name('login');

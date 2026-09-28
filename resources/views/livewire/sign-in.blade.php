@@ -36,7 +36,21 @@
         </button>
     </form>
 
-    @env('local')
+    @if (App\Support\Demo::enabled())
+        <div class="mt-4 rounded-xl border border-stone-200 bg-white px-5 py-4 text-sm text-stone-600 shadow-xs">
+            <p class="font-medium text-stone-900">Look around without an account</p>
+            <p class="mt-0.5">An admin sees every lead and sets the buyers' rules. A processor works their own leads.</p>
+
+            <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                <button type="button" wire:click="signInAs('admin')" class="button-quiet">Sign in as the admin</button>
+                <button type="button" wire:click="signInAs('processor')" class="button-quiet">Sign in as a processor</button>
+            </div>
+
+            @error('demo')
+                <p class="mt-2 text-red-700">{{ $message }}</p>
+            @enderror
+        </div>
+    @elseif (app()->isLocal())
         <div class="mt-4 rounded-xl border border-dashed border-stone-300 px-5 py-4 text-sm text-stone-600">
             <p class="font-medium text-stone-900">Demo accounts</p>
             <p class="mt-0.5">Shown only while the app runs locally, after seeding.</p>
@@ -56,5 +70,5 @@
                 </div>
             </dl>
         </div>
-    @endenv
+    @endif
 </div>
