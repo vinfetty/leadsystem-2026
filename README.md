@@ -12,8 +12,8 @@ Every figure in the 2005 column was measured from the original code.
 
 | | 2005 | 2026 |
 |---|---|---|
-| List, action and schedule screens | 28 files and 13,261 lines, counting the per-lender, Spanish and backup copies | 2 Livewire components and their views, 875 lines |
-| A lender gets its own view | Copy the pages. `actionviewmort_lmb.php` is 95% identical to `actionviewmort.php` | Not rebuilt. It would be a filter on the one inbox |
+| List, action and schedule screens | 28 files and 13,261 lines, counting the per-lender, Spanish and backup copies | 2 Livewire components and their views, 874 lines |
+| A lender gets its own view | Copy the pages. One lender's copy of the action page is 95% identical to the original | Not rebuilt. It would be a filter on the one inbox |
 | Where a lead came from | A `sitenum` number stamped on the lead | A `lead_sources` row with its own intake token |
 | Database access | 55 files open their own connection and 42 carry the password in source | One connection, configured in `.env` |
 | Lead status | `actionlevel` integers: 0, 1, 20, 30, 31, 99 | A `LeadStatus` enum |
@@ -139,6 +139,10 @@ php artisan test
 
 The 146 tests cover lead intake, the inbox filters, who may see and change which lead, the race between two brokers, call logging, and call-back times across time zones and daylight saving.
 
+## How this was built
+
+I wrote the original by hand. The 2026 rebuild was written with Claude Code, an AI coding assistant, working to my direction.
+
 ## What is not here
 
 - **The 2005 code.** It holds real people's details and live passwords, so it stays private. The excerpts above contain neither.
@@ -148,3 +152,7 @@ The 146 tests cover lead intake, the inbox filters, who may see and change which
 ## Built with
 
 Laravel 13, Livewire 4, Tailwind CSS 4, SQLite and PHPUnit 12.
+
+## Licence
+
+Released under the [MIT licence](LICENSE).
